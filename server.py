@@ -28,13 +28,13 @@ bcrypt = Bcrypt(app)
 # app.config['SQLALCHEMY_DATABASE_URI'] = 
 
 # prod
-# app.config['SQLALCHEMY_DATABASE_URI'] = postgres://admin:ISXCZMs8jsMbIueadzQzXqIiW2Jtxb1y@dpg-cc6886da49936rkaijgg-a.oregon-postgres.render.com/syncy
+# app.config['SQLALCHEMY_DATABASE_URI'] = 'postgres://admin:ISXCZMs8jsMbIueadzQzXqIiW2Jtxb1y@dpg-cc6886da49936rkaijgg-a.oregon-postgres.render.com/syncy'
 
 # local
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql:///syncy'
+# app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql:///syncy'
 
 # dynamic
-# app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URI")
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URI")
 
 print('################################', os.environ.get("DATABASE_URI"))
 
