@@ -25,10 +25,10 @@ CORS(app)
 bcrypt = Bcrypt(app)
 
 # dev
-# app.config['SQLALCHEMY_DATABASE_URI'] = 'postgres://tfcezckttsgnsa:caa3c64afdd2c8ea252d19ce245dcf113932a6693d65fc9dcfbe70e69596fb0f@ec2-44-195-169-163.compute-1.amazonaws.com:5432/d5n5hjeqm7s5b7'
+# app.config['SQLALCHEMY_DATABASE_URI'] = 
 
 # prod
-# app.config['SQLALCHEMY_DATABASE_URI'] = 'postgres://postgres:!1bartoI@barto.cfo6uy293xm6.us-east-1.rds.amazonaws.com:5432/barto'
+# app.config['SQLALCHEMY_DATABASE_URI'] = postgres://admin:ISXCZMs8jsMbIueadzQzXqIiW2Jtxb1y@dpg-cc6886da49936rkaijgg-a.oregon-postgres.render.com/syncy
 
 # local
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql:///syncy'
@@ -40,11 +40,10 @@ print('################################', os.environ.get("DATABASE_URI"))
 
 db = SQLAlchemy(app)
 migrate = Migrate(app, db, compare_type=True)
-
-from algoliasearch.search_client import SearchClient
-# API keys below contain actual values tied to your Algolia account
-client = SearchClient.create('V447OWYS2Y', '8ccb7e48a996f5816cac9bde946a6841')
-index = client.init_index('barto_algolia_index')
+# from algoliasearch.search_client import SearchClient
+# # API keys below contain actual values tied to your Algolia account
+# client = SearchClient.create('V447OWYS2Y', '8ccb7e48a996f5816cac9bde946a6841')
+# index = client.init_index('barto_algolia_index')
 
 
 '''functions'''
