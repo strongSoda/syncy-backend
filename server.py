@@ -1,7 +1,7 @@
 import decimal
 import email
 from operator import or_
-from flask import Flask, request, jsonify, make_response
+from flask import Flask, request, jsonify, make_response, redirect
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import load_only
 from flask_migrate import Migrate
@@ -40,13 +40,25 @@ print('################################', os.environ.get("DATABASE_URI"))
 
 db = SQLAlchemy(app)
 migrate = Migrate(app, db, compare_type=True)
-# from algoliasearch.search_client import SearchClient
+
+from algoliasearch.search_client import SearchClient
 # # API keys below contain actual values tied to your Algolia account
-# client = SearchClient.create('V447OWYS2Y', '8ccb7e48a996f5816cac9bde946a6841')
-# index = client.init_index('barto_algolia_index')
+client = SearchClient.create('V447OWYS2Y', '8ccb7e48a996f5816cac9bde946a6841')
+index = client.init_index('syncy-test')
 
 
 '''functions'''
+# upload profile image to imgur and return url
+def upload_image_to_imgur(image):
+    import requests
+    import json
+    url = 'https://api.imgur.com/3/image'
+    headers = {'Authorization': 'Client-ID 7e6d12bb05e5891'}
+    files = {'image': image}
+    r = requests.post(url, headers=headers, files=files)
+    data = json.loads(r.text)
+    print(data)
+    return data['data']['link']
 
 """models"""
 
@@ -122,23 +134,23 @@ class TargetUserProfileModel(Base):
     __tablename__ = 'target_user_profile'
 
     name = db.Column(db.String(100), nullable=False)
-    email = db.Column(db.String(100), nullable=False)
-    linkedin_url = db.Column(db.String(100))
-    calendly_url = db.Column(db.String(100), nullable=False)
-    profile_image_url = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(200), nullable=False)
+    linkedin_url = db.Column(db.String(255))
+    calendly_url = db.Column(db.String(255), nullable=False)
+    profile_image_url = db.Column(db.String(250), nullable=False)
     city = db.Column(db.String(100), nullable=False)
     country = db.Column(db.String(100), nullable=False)
-    bio = db.Column(db.String(100), nullable=False)
+    bio = db.Column(db.String(400), nullable=False)
 
-    def __init__(self, name, linkedin_url, calendly_url, profile_image_url, city, country, bio, tags):
+    def __init__(self, name, email, linkedin_url, calendly_url, profile_image_url, city, country, bio):
         self.name = name
+        self.email = email
         self.linkedin_url = linkedin_url
         self.calendly_url = calendly_url
         self.profile_image_url = profile_image_url
         self.city = city
         self.country = country
         self.bio = bio
-        self.tags = tags
 
     def __repr__(self):
         return '<id {}>'.format(self.id)
@@ -201,7 +213,22 @@ def hello():
 # create new target user profile
 @app.route('/target_user_profile', methods=['POST'])
 def create_target_user_profile():
-    data = request.get_json()
+    # data = request.get_json()
+    data =dict()
+    data['name'] = request.form.get('name')
+    data['email'] = request.form.get('email')
+    data['linkedin_url'] = request.form.get('linkedin')
+    data['calendly_url'] = request.form.get('calendly')
+    data['bio'] = request.form.get('bio-max-250-characters')
+    data['city'] = request.form.get('city')
+    data['country'] = request.form.get('country')
+    data['tags'] = [tag.strip() for tag in request.form.get('tags-eg-doctor-parent-student-designer-etc-at-least-2-tags-comma-separated').split(',')]
+
+    # get profile image from request form
+    profile_image = request.files['profile-image'] 
+    #  upload profile image to imgur and get the url
+    data['profile_image_url'] = upload_image_to_imgur(profile_image)
+    print(data, profile_image)
     try:
         new_target_user_profile = TargetUserProfileModel.create(
             name=data['name'],
@@ -234,13 +261,31 @@ def create_target_user_profile():
                     user_id=new_target_user_profile.id,
                     tag_id=new_tag.id
                 )
+        
+        # send to algolia
+        new_target_user_profile_dict = TargetUserProfileModel.serialize(new_target_user_profile)
+        print('##', new_target_user_profile_dict)
+        new_target_user_profile_dict['objectID'] = new_target_user_profile_dict['id']
+        print('## 2', new_target_user_profile_dict)
+        CATEGORIES = []
+        # Index the product with Algolia
+        for c in data['tags']:
+            CATEGORIES.append(c.strip())
+        new_target_user_profile_dict['categories'] = CATEGORIES
+        print('## 3', new_target_user_profile_dict)
+        index.save_object(new_target_user_profile_dict)
+        print('## 4', new_target_user_profile_dict)
+        # return new_target_user_profile_dict
         responseObject = {
             'status': 'success',
             'data': {
                 'user': TargetUserProfileModel.serialize(new_target_user_profile),
             },
         }
-        return make_response(jsonify(responseObject)), 200
+        print('## 5', responseObject)
+        # redirect to home page
+        return redirect("https://syncy.net/#join-success", code=302)
+        # return make_response(jsonify(responseObject)), 200
     except exc.IntegrityError as e:
         print(str(e))
         responseObject = {
