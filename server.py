@@ -12,13 +12,17 @@ from sqlalchemy import exc, Sequence
 import csv
 import json
 import os
-# import stripe
 from datetime import datetime, timedelta
 import jwt
 from dotenv import load_dotenv
 load_dotenv()
 
 from get_usd_price import get_usd_price
+
+
+import stripe
+# This is your test secret API key.
+stripe.api_key = 'sk_test_51JMNGMBC2Ls8FQJScwZbebJ4QxAU4XIEpf7tHIQ6b2gOJ8piskUX5WAWi6TfKrMiTmv6pHuJr1rFQsgwdPeEmHjo00h9RzLUTz'
 
 app = Flask(__name__)
 CORS(app)
@@ -28,13 +32,13 @@ bcrypt = Bcrypt(app)
 # app.config['SQLALCHEMY_DATABASE_URI'] = 
 
 # prod
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgres://admin:ISXCZMs8jsMbIueadzQzXqIiW2Jtxb1y@dpg-cc6886da49936rkaijgg-a.oregon-postgres.render.com/syncy'
+# app.config['SQLALCHEMY_DATABASE_URI'] = 'postgres://admin:ISXCZMs8jsMbIueadzQzXqIiW2Jtxb1y@dpg-cc6886da49936rkaijgg-a.oregon-postgres.render.com/syncy'
 
 # local
 # app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql:///syncy'
 
 # dynamic
-# app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URI")
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URI")
 
 print('################################', os.environ.get("DATABASE_URI"))
 
@@ -46,6 +50,8 @@ from algoliasearch.search_client import SearchClient
 client = SearchClient.create('V447OWYS2Y', '8ccb7e48a996f5816cac9bde946a6841')
 index = client.init_index('syncy-test')
 
+
+YOUR_DOMAIN = 'https://syncy.net'
 
 '''functions'''
 # upload profile image to imgur and return url
@@ -666,6 +672,70 @@ def get_target_user_profiles_search():
         },
     }
     return make_response(jsonify(responseObject)), 200
+
+# Create a Checkout Session
+@app.route('/create-checkout-session', methods=['POST'])
+def create_checkout_session():
+    print('create_checkout_session')
+    # get the post data from the request
+    post_data = request.get_json()
+    # get user id, name, profile_image, email, city, country, tags, bio, success_url, cancel_url, linkedin from the post data
+    user_id = post_data.get('user_id')
+    name = post_data.get('name')
+    profile_image_url = post_data.get('profile_image_url')
+    email = post_data.get('email')
+    city = post_data.get('city')
+    country = post_data.get('country')
+    tags = post_data.get('tags')
+    bio = post_data.get('bio')
+    linkedin_url = post_data.get('linkedin_url')
+    calendly_url = post_data.get('calendly_url')
+
+    # print the post data
+    print('post_data', post_data)
+
+    try:
+        checkout_session = stripe.checkout.Session.create(
+            line_items=[
+                {
+                    # Provide the exact Price ID (for example, pr_1234) of the product you want to sell
+                    'price_data': {
+                        'currency': 'usd',
+                        'unit_amount': 2500,
+                        'product_data': {
+                            'name': 'Syncy 30 minute call with ' + name,
+                            "description": "Please complete payment in order to confirm your Sync. Send questions or feedback to help@syncy.net.",
+                            "images": [profile_image_url],
+                            "metadata": {
+                                "name": name,
+                                "email" : email,
+                                "linkedin": linkedin_url,
+                                "bio": bio,
+                                "city": city,
+                                "country": country,
+                                "tags": tags,
+                            },
+                        },
+                    },
+                    'quantity': 1,
+                },
+            ],
+            mode='payment',
+            # success_url='http://localhost:5500/book-call.html?id=' + user_id,
+            success_url=YOUR_DOMAIN + '/#book-call?id=' + user_id,
+            cancel_url=YOUR_DOMAIN + '/#match',
+        )
+        print(checkout_session)
+        responseObject = {
+            'status': 'success',
+            'data': {
+                'url': checkout_session.url,
+            },
+        }
+        return make_response(jsonify(responseObject)), 200
+    except Exception as e:
+        print('e', str(e))
+        return str(e)
 
 if __name__ == '__main__':
     app.run(debug=True)
