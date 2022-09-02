@@ -722,7 +722,7 @@ def create_checkout_session():
             ],
             mode='payment',
             # success_url='http://localhost:5500/book-call.html?id=' + user_id,
-            success_url=YOUR_DOMAIN + '/#book-call?id=' + user_id,
+            success_url=YOUR_DOMAIN + '/?id=' + user_id + '#book-call',
             cancel_url=YOUR_DOMAIN + '/#match',
         )
         print(checkout_session)
