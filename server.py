@@ -47,8 +47,8 @@ migrate = Migrate(app, db, compare_type=True)
 
 from algoliasearch.search_client import SearchClient
 # # API keys below contain actual values tied to your Algolia account
-client = SearchClient.create('V447OWYS2Y', '8ccb7e48a996f5816cac9bde946a6841')
-index = client.init_index('syncy-test')
+client = SearchClient.create('L7PFECEWC3', 'e03caa75dd335df7a8fefb1f0e3b6e27')
+index = client.init_index('syncy')
 
 
 YOUR_DOMAIN = 'https://syncy.net'
