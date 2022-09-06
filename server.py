@@ -19,14 +19,6 @@ load_dotenv()
 
 from get_usd_price import get_usd_price
 
-
-import stripe
-# This is your test secret API key.
-# stripe.api_key = 'sk_test_51JMNGMBC2Ls8FQJScwZbebJ4QxAU4XIEpf7tHIQ6b2gOJ8piskUX5WAWi6TfKrMiTmv6pHuJr1rFQsgwdPeEmHjo00h9RzLUTz'
-
-# This is your live secret API key.
-stripe.api_key = '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'
-
 app = Flask(__name__)
 CORS(app)
 bcrypt = Bcrypt(app)
@@ -43,7 +35,13 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'postgres://admin:ISXCZMs8jsMbIueadzQzXq
 # dynamic
 # app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URI")
 
-print('################################', os.environ.get("DATABASE_URI"))
+print('################################', os.environ.get("DATABASE_URI"), os.environ.get("STRIPE_LIVE_SECRET_KEY"))
+import stripe
+# This is your test secret API key.
+# stripe.api_key = 'sk_test_51JMNGMBC2Ls8FQJScwZbebJ4QxAU4XIEpf7tHIQ6b2gOJ8piskUX5WAWi6TfKrMiTmv6pHuJr1rFQsgwdPeEmHjo00h9RzLUTz'
+
+# This is your live secret API key.
+stripe.api_key = os.environ.get("STRIPE_LIVE_SECRET_KEY")
 
 db = SQLAlchemy(app)
 migrate = Migrate(app, db, compare_type=True)
