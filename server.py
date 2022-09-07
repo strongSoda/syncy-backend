@@ -722,6 +722,7 @@ def create_checkout_session():
                 },
             ],
             mode='payment',
+            allow_promotion_codes=True,
             # success_url='http://localhost:5500/book-call.html?id=' + user_id,
             success_url=YOUR_DOMAIN + '/?id=' + user_id + '#book-call',
             cancel_url=YOUR_DOMAIN + '/#match',
