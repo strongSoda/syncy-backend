@@ -727,7 +727,7 @@ def create_checkout_session():
             success_url=YOUR_DOMAIN + '/?id=' + user_id + '#book-call',
             cancel_url=YOUR_DOMAIN + '/#match',
         )
-        print(checkout_session)
+        # print(checkout_session)
         responseObject = {
             'status': 'success',
             'data': {
