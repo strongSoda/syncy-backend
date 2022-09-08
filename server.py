@@ -147,7 +147,7 @@ class TargetUserProfileModel(Base):
     profile_image_url = db.Column(db.String(250), nullable=False)
     city = db.Column(db.String(100), nullable=False)
     country = db.Column(db.String(100), nullable=False)
-    bio = db.Column(db.String(400), nullable=False)
+    bio = db.Column(db.String(600), nullable=False)
 
     def __init__(self, name, email, linkedin_url, calendly_url, profile_image_url, city, country, bio):
         self.name = name
