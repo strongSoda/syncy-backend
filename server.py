@@ -26,6 +26,9 @@ bcrypt = Bcrypt(app)
 # dev
 # app.config['SQLALCHEMY_DATABASE_URI'] = 
 
+# pool_pre_ping should help handle DB connection drops
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {"pool_pre_ping": True}  
+
 # prod
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgres://admin:ISXCZMs8jsMbIueadzQzXqIiW2Jtxb1y@dpg-cc6886da49936rkaijgg-a.oregon-postgres.render.com/syncy'
 
