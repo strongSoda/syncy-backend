@@ -151,8 +151,10 @@ class TargetUserProfileModel(Base):
     city = db.Column(db.String(100), nullable=False)
     country = db.Column(db.String(100), nullable=False)
     bio = db.Column(db.String(600), nullable=False)
+    payment_info = db.Column(db.String(600))
 
-    def __init__(self, name, email, linkedin_url, calendly_url, profile_image_url, city, country, bio):
+
+    def __init__(self, name, email, linkedin_url, calendly_url, profile_image_url, city, country, bio, payment_info):
         self.name = name
         self.email = email
         self.linkedin_url = linkedin_url
@@ -161,6 +163,7 @@ class TargetUserProfileModel(Base):
         self.city = city
         self.country = country
         self.bio = bio
+        self.payment_info = payment_info
 
     def __repr__(self):
         return '<id {}>'.format(self.id)
@@ -192,6 +195,57 @@ class TagsUserMapModel(Base):
     def __repr__(self):
         return '<id {}>'.format(self.id)
 
+# school model with name
+class SchoolModel(Base):
+    __tablename__ = 'school'
+
+    name = db.Column(db.String(100), nullable=False)
+
+    def __init__(self, name):
+        self.name = name
+
+    def __repr__(self):
+        return '<id {}>'.format(self.id)
+
+# school and user map model with user id and school id
+class SchoolUserMapModel(Base):
+    __tablename__ = 'school_user_map'
+
+    user_id = db.Column(db.Integer, nullable=False)
+    school_id = db.Column(db.Integer, nullable=False)
+
+    def __init__(self, user_id, school_id):
+        self.user_id = user_id
+        self.school_id = school_id
+
+    def __repr__(self):
+        return '<id {}>'.format(self.id)
+
+# company model with name
+class CompanyModel(Base):
+    __tablename__ = 'company'
+
+    name = db.Column(db.String(100), nullable=False)
+
+    def __init__(self, name):
+        self.name = name
+
+    def __repr__(self):
+        return '<id {}>'.format(self.id)
+
+# company and user map model with user id and company id
+class CompanyUserMapModel(Base):
+    __tablename__ = 'company_user_map'
+
+    user_id = db.Column(db.Integer, nullable=False)
+    company_id = db.Column(db.Integer, nullable=False)
+
+    def __init__(self, user_id, company_id):
+        self.user_id = user_id
+        self.company_id = company_id
+
+    def __repr__(self):
+        return '<id {}>'.format(self.id)
 
 """routes"""
 
@@ -233,6 +287,9 @@ def create_target_user_profile():
     data['city'] = request.form.get('city')
     data['country'] = request.form.get('country')
     data['tags'] = [tag.strip() for tag in request.form.get('tags-eg-doctor-parent-student-designer-etc-at-least-2-tags-comma-separated').split(',')]
+    data['school'] = [tag.strip() for tag in request.form.get('schools-you-attended-eg-harvard-london-university-etc-comma-separated').split(',')]
+    data['company'] = [tag.strip() for tag in request.form.get('companies-you-have-worked-for-eg-google-spotify-etc-comma-separated').split(',')]
+    data['payment_info'] = request.form.get('payment-info-paypal-email-or-venmo-id')
 
     # get profile image from request form
     profile_image = request.files['profile-image'] 
@@ -249,6 +306,7 @@ def create_target_user_profile():
             city=data['city'],
             country=data['country'],
             bio=data['bio'],
+            payment_info=data['payment_info']
         )
         # create tags if dont exist and map them to user
         for tag in data['tags']:
@@ -271,17 +329,77 @@ def create_target_user_profile():
                     user_id=new_target_user_profile.id,
                     tag_id=new_tag.id
                 )
+
+        # create schools if dont exist and map them to user
+        for school in data['school']:
+            # check case and remove spaces
+            school = school.strip().lower()
+            # check if school exists
+            school_exists = SchoolModel.query.filter_by(name=school).first()
+            if school_exists:
+                # map school to user
+                SchoolUserMapModel.create(
+                    user_id=new_target_user_profile.id,
+                    school_id=school_exists.id
+                )
+            else:
+                # create school and map to user
+                new_school = SchoolModel.create(
+                    name=school
+                )
+                SchoolUserMapModel.create(
+                    user_id=new_target_user_profile.id,
+                    school_id=new_school.id
+                )
+        
+        # create companies if dont exist and map them to user
+        for company in data['company']:
+            # check case and remove spaces
+            company = company.strip().lower()
+            # check if company exists
+            company_exists = CompanyModel.query.filter_by(name=company).first()
+            if company_exists:
+                # map company to user
+                CompanyUserMapModel.create(
+                    user_id=new_target_user_profile.id,
+                    company_id=company_exists.id
+                )
+            else:
+                # create company and map to user
+                new_company = CompanyModel.create(
+                    name=company
+                )
+                CompanyUserMapModel.create(
+                    user_id=new_target_user_profile.id,
+                    company_id=new_company.id
+                )
+        
+
         
         # send to algolia
         new_target_user_profile_dict = TargetUserProfileModel.serialize(new_target_user_profile)
         print('##', new_target_user_profile_dict)
         new_target_user_profile_dict['objectID'] = new_target_user_profile_dict['id']
         print('## 2', new_target_user_profile_dict)
+        
         CATEGORIES = []
         # Index the product with Algolia
         for c in data['tags']:
             CATEGORIES.append(c.strip())
         new_target_user_profile_dict['categories'] = CATEGORIES
+
+        SCHOOLS = []
+        # Index the product with Algolia
+        for c in data['school']:
+            SCHOOLS.append(c.strip())
+        new_target_user_profile_dict['schools'] = SCHOOLS
+
+        COMPANIES = []
+        # Index the product with Algolia
+        for c in data['company']:
+            COMPANIES.append(c.strip())
+        new_target_user_profile_dict['companies'] = COMPANIES
+        
         print('## 3', new_target_user_profile_dict)
         index.save_object(new_target_user_profile_dict)
         print('## 4', new_target_user_profile_dict)
