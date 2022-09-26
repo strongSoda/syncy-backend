@@ -865,5 +865,25 @@ def create_checkout_session():
         print('e', str(e))
         return str(e)
 
+# import pandas
+import pandas as pd
+# import send_file
+from flask import send_file
+
+
+# get all target users and send csv file
+@app.route('/target_users_csv', methods=['GET'])
+def get_target_users_csv():
+    target_user_profiles = TargetUserProfileModel.query.all()
+    target_user_profiles_dict = TargetUserProfileModel.serialize_all(target_user_profiles)
+
+    # create a csv file with panda
+    df = pd.DataFrame(target_user_profiles_dict)
+    csv = df.to_csv('target_user_profiles', index=False)
+
+    # sned csv file with send_file
+    return send_file('target_user_profiles', mimetype='text/csv', attachment_filename='target_user_profiles.csv', as_attachment=True)
+
+
 if __name__ == '__main__':
     app.run(debug=True)
