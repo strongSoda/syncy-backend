@@ -1,7 +1,7 @@
 import decimal
 import email
 from operator import or_
-from flask import Flask, request, jsonify, make_response, redirect
+from flask import Flask, request, jsonify, make_response, redirect, send_file
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import load_only
 from flask_migrate import Migrate
@@ -15,6 +15,9 @@ import os
 from datetime import datetime, timedelta
 import jwt
 from dotenv import load_dotenv
+# import pandas
+import pandas as pd
+
 load_dotenv()
 
 from get_usd_price import get_usd_price
@@ -864,11 +867,6 @@ def create_checkout_session():
     except Exception as e:
         print('e', str(e))
         return str(e)
-
-# import pandas
-import pandas as pd
-# import send_file
-from flask import send_file
 
 
 # get all target users and send csv file
