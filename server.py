@@ -152,9 +152,11 @@ class TargetUserProfileModel(Base):
     country = db.Column(db.String(100), nullable=False)
     bio = db.Column(db.String(600), nullable=False)
     payment_info = db.Column(db.String(600))
+    # referer name
+    referer = db.Column(db.String(200))
 
 
-    def __init__(self, name, email, linkedin_url, calendly_url, profile_image_url, city, country, bio, payment_info):
+    def __init__(self, name, email, linkedin_url, calendly_url, profile_image_url, city, country, bio, payment_info, referer):
         self.name = name
         self.email = email
         self.linkedin_url = linkedin_url
@@ -164,6 +166,7 @@ class TargetUserProfileModel(Base):
         self.country = country
         self.bio = bio
         self.payment_info = payment_info
+        self.referer = referer
 
     def __repr__(self):
         return '<id {}>'.format(self.id)
@@ -290,6 +293,7 @@ def create_target_user_profile():
     data['school'] = [tag.strip() for tag in request.form.get('schools-you-attended-eg-harvard-london-university-etc-comma-separated').split(',')]
     data['company'] = [tag.strip() for tag in request.form.get('companies-you-have-worked-for-eg-google-spotify-etc-comma-separated').split(',')]
     data['payment_info'] = request.form.get('payment-info-paypal-email-or-venmo-id')
+    data['referer'] = request.form.get('referrer-name')
 
     # get profile image from request form
     profile_image = request.files['profile-image'] 
@@ -306,7 +310,8 @@ def create_target_user_profile():
             city=data['city'],
             country=data['country'],
             bio=data['bio'],
-            payment_info=data['payment_info']
+            payment_info=data['payment_info'],
+            referer=data['referer']
         )
         # create tags if dont exist and map them to user
         for tag in data['tags']:
