@@ -840,7 +840,8 @@ def create_checkout_session():
                                 "name": name,
                                 "email" : email,
                                 "linkedin": linkedin_url,
-                                "bio": bio,
+                                # truncate bio to 400 characters
+                                "bio": bio[:400],
                                 "city": city,
                                 "country": country,
                                 "tags": tags,
