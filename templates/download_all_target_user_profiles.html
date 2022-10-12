@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <h1>Download All Target User Profiles</h1>
+    <form>
+        <input type="submit" value="Download">
+    </form>
+    <script>
+        // calls /all_target_user_profiles and converts json to csv and downloads
+        function downloadAllTargetUserProfiles() {
+            fetch('/all_target_user_profiles')
+                .then(response => response.json())
+                .then(data => {
+                    const csv = convertToCSV(data);
+                    downloadCSV(csv);
+                })
+                .catch(error => console.error(error));
+        }
+
+        // converts json to csv
+        function convertToCSV(json) {
+            const fields = Object.keys(json[0]);
+            const replacer = (key, value) => value === null ? '' : value;
+            const csv = [
+                fields.join(','), // header row first
+                ...json.map(row => fields.map(fieldName => JSON.stringify(row[fieldName], replacer)).join(','))
+            ].join(''); // new line
+
+            console.log(csv);
+            return csv;
+
+        }
+
+        // downloads csv
+        function downloadCSV(csv) {
+            console.log('downloadCSV');
+            const csvFile = new Blob([csv], { type: 'text/csv' });
+            const downloadLink = document.createElement('a');
+            downloadLink.download = 'all_target_user_profiles.csv';
+            downloadLink.href = window.URL.createObjectURL(csvFile);
+
+            console.log('here', downloadLink);
+            // downloadLink.style.display = 'none';
+            document.body.appendChild(downloadLink);
+            // document.body.removeChild(downloadLink);
+            downloadLink.click();
+            console.log('downloaded');
+            // hide loading and show download button
+            document.querySelector('h1').innerHTML = '';
+            document.querySelector('form').style.display = 'block';
+        }
+
+        // calls downloadAllTargetUserProfiles() when form is submitted
+        document.querySelector('form').addEventListener('submit', (event) => {
+            event.preventDefault();
+            downloadAllTargetUserProfiles();
+        });
+
+        // show loading after form is submitted and before csv is downloaded then hide loading
+        document.querySelector('form').addEventListener('submit', (event) => {
+            document.querySelector('form').style.display = 'none';
+            document.querySelector('h1').innerHTML = 'Loading...';
+        });
+        
+    </script>
+</body>
+</html>

@@ -1,7 +1,7 @@
 import decimal
 import email
 from operator import or_
-from flask import Flask, request, jsonify, make_response, redirect
+from flask import Flask, request, jsonify, make_response, redirect, render_template
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import load_only
 from flask_migrate import Migrate
@@ -867,6 +867,23 @@ def create_checkout_session():
         print('e', str(e))
         return str(e)
 
+# return all target user profiles
+@app.route('/all_target_user_profiles', methods=['GET'])
+def get_all_target_user_profiles():
+    target_user_profiles = TargetUserProfileModel.query.all()
+    target_user_profiles_dict = TargetUserProfileModel.serialize_all(target_user_profiles)
+    # responseObject = {
+    #     'status': 'success',
+    #     'data': {
+    #         'target_user_profiles': target_user_profiles_dict,
+    #     },
+    # }
+    return make_response(jsonify(target_user_profiles_dict)), 200
+
+# api to render a page that calls /all_target_user_profiles and converts json to csv and downloads
+@app.route('/download_all_target_user_profiles', methods=['GET'])
+def download_all_target_user_profiles():
+    return render_template('download_all_target_user_profiles.html') 
 
 if __name__ == '__main__':
     app.run(debug=True)
