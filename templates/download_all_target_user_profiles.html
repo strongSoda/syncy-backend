@@ -25,13 +25,15 @@
 
         // converts json to csv
         function convertToCSV(json) {
-            const fields = Object.keys(json.find(o => o.id === '36'));
-            console.log('fields', fields);
-            const replacer = (key, value) => value === null ? '' : value;
-            const csv = [
-                fields.join(','), // header row first
-                ...json.map(row => fields.map(fieldName => JSON.stringify(row[fieldName], replacer)).join(','))
-            ].join(''); // new line
+            // get the headers
+            const headers = Object.keys(json[36]);
+            let csv = headers.join(',') + '';
+
+            console.log(headers);
+            // loop over the rows
+            json.forEach(row => {
+                csv += Object.values(row).join(',') + '\n';
+            });
 
             console.log(csv);
             return csv;
