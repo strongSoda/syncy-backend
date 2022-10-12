@@ -25,7 +25,8 @@
 
         // converts json to csv
         function convertToCSV(json) {
-            const fields = Object.keys(json[0]);
+            const fields = Object.keys(json.find(o => o.id === '36'));
+            console.log('fields', fields);
             const replacer = (key, value) => value === null ? '' : value;
             const csv = [
                 fields.join(','), // header row first
