@@ -418,7 +418,7 @@ def create_target_user_profile():
         }
         print('## 5', responseObject)
         # redirect to home page
-        return redirect("https://syncy.me/" + str(new_target_user_profile.id), code=302)
+        return redirect(f"https://syncy.me/{new_target_user_profile.id}", code=302)
         # return make_response(jsonify(responseObject)), 200
     except exc.IntegrityError as e:
         print(str(e))
