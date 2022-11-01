@@ -418,7 +418,7 @@ def create_target_user_profile():
         }
         print('## 5', responseObject)
         # redirect to home page
-        return redirect(f"https://syncy.me/{new_target_user_profile.id}", code=302)
+        return redirect(f"https://beamish-liger-1e2ea4.netlify.app/index.html?syncy%5Bquery%5D={new_target_user_profile.name}", code=302)
         # return make_response(jsonify(responseObject)), 200
     except exc.IntegrityError as e:
         print(str(e))
