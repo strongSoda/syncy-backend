@@ -418,7 +418,8 @@ def create_target_user_profile():
         }
         print('## 5', responseObject)
         # redirect to home page
-        return redirect(f"https://beamish-liger-1e2ea4.netlify.app/index.html?syncy%5Bquery%5D={new_target_user_profile.name}", code=302)
+        # return redirect(f"https://beamish-liger-1e2ea4.netlify.app/index.html?syncy%5Bquery%5D={new_target_user_profile.name}", code=302)
+        return redirect(f"https://syncy.me/{new_target_user_profile.id}", code=302)
         # return make_response(jsonify(responseObject)), 200
     except exc.IntegrityError as e:
         print(str(e))
@@ -819,6 +820,8 @@ def create_checkout_session():
     linkedin_url = post_data.get('linkedin_url')
     calendly_url = post_data.get('calendly_url')
 
+    # get user from the database by user id
+    user = TargetUserProfileModel.query.filter_by(id=user_id).first()
     # print the post data
     print('post_data', post_data)
 
@@ -852,8 +855,8 @@ def create_checkout_session():
             mode='payment',
             allow_promotion_codes=True,
             # success_url='http://localhost:5500/book-call.html?id=' + user_id,
-            success_url=YOUR_DOMAIN + '/?id=' + user_id + '#book-call',
-            cancel_url=YOUR_DOMAIN + '/#match',
+            success_url=user.calendly_url,
+            cancel_url=YOUR_DOMAIN,
         )
         # print(checkout_session)
         responseObject = {
