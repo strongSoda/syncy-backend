@@ -155,9 +155,14 @@ class TargetUserProfileModel(Base):
     payment_info = db.Column(db.String(600))
     # referer name
     referer = db.Column(db.String(200))
+    
+    instagram_url = db.Column(db.String(255))
+    tiktok_url = db.Column(db.String(255))
+    website_url = db.Column(db.String(255))
+    # column to store rate
+    rate = db.Column(db.Integer)
 
-
-    def __init__(self, name, email, linkedin_url, calendly_url, profile_image_url, city, country, bio, payment_info, referer):
+    def __init__(self, name, email, linkedin_url, calendly_url, profile_image_url, city, country, bio, payment_info, referer, instagram_url, tiktok_url, website_url, rate):
         self.name = name
         self.email = email
         self.linkedin_url = linkedin_url
@@ -168,6 +173,10 @@ class TargetUserProfileModel(Base):
         self.bio = bio
         self.payment_info = payment_info
         self.referer = referer
+        self.instagram_url = instagram_url
+        self.tiktok_url = tiktok_url
+        self.website_url = website_url
+        self.rate = rate
 
     def __repr__(self):
         return '<id {}>'.format(self.id)
@@ -295,6 +304,10 @@ def create_target_user_profile():
     data['company'] = [tag.strip() for tag in request.form.get('companies-you-have-worked-for-eg-google-spotify-etc-comma-separated').split(',')]
     data['payment_info'] = request.form.get('payment-info-paypal-email-or-venmo-id')
     data['referer'] = request.form.get('referrer-name')
+    data['instagram_url'] = request.form.get('instagram')
+    data['tiktok_url'] = request.form.get('tiktok')
+    data['website_url'] = request.form.get('website')
+    data['rate'] = request.form.get('rate')
 
     # get profile image from request form
     profile_image = request.files['profile-image'] 
@@ -312,7 +325,11 @@ def create_target_user_profile():
             country=data['country'],
             bio=data['bio'],
             payment_info=data['payment_info'],
-            referer=data['referer']
+            referer=data['referer'],
+            instagram_url=data['instagram_url'],
+            tiktok_url=data['tiktok_url'],
+            website_url=data['website_url'],
+            rate=data['rate']
         )
         # create tags if dont exist and map them to user
         for tag in data['tags']:
@@ -818,6 +835,7 @@ def create_checkout_session():
     tags = post_data.get('tags')
     bio = post_data.get('bio')
     linkedin_url = post_data.get('linkedin_url')
+    rate = post_data.get('rate')
     calendly_url = post_data.get('calendly_url')
 
     # get user from the database by user id
@@ -832,7 +850,7 @@ def create_checkout_session():
                     # Provide the exact Price ID (for example, pr_1234) of the product you want to sell
                     'price_data': {
                         'currency': 'usd',
-                        'unit_amount': 2500,
+                        'unit_amount': rate*100 if rate and rate!=25 else 2500,
                         'product_data': {
                             'name': 'Syncy 30 minute call with ' + name,
                             "description": "Please complete payment in order to confirm your Sync. Send questions or feedback to help@syncy.net.",
