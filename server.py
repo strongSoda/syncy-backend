@@ -835,7 +835,7 @@ def create_checkout_session():
     tags = post_data.get('tags')
     bio = post_data.get('bio')
     linkedin_url = post_data.get('linkedin_url')
-    rate = post_data.get('rate')
+    rate = int(post_data.get('rate'))
     calendly_url = post_data.get('calendly_url')
 
     # get user from the database by user id
