@@ -835,8 +835,8 @@ def create_checkout_session():
     tags = post_data.get('tags')
     bio = post_data.get('bio')
     linkedin_url = post_data.get('linkedin_url')
-    rate = int(post_data.get('rate'))
     calendly_url = post_data.get('calendly_url')
+    rate = int(post_data.get('rate')) if rate else 0
 
     # get user from the database by user id
     user = TargetUserProfileModel.query.filter_by(id=user_id).first()
