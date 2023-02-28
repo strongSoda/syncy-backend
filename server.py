@@ -278,8 +278,12 @@ class CompanyUserMapModel(Base):
 """home route"""
 
 
-@app.route('/', methods=['POST', 'GET'])
-def hello():
+@app.route('/')
+def home():
+    return jsonify({'message': 'Welcome to the API'}), 200
+
+@app.route('/imageUpload', methods=['POST', 'GET'])
+def imageUpload():
     # products = ProductModel.query.order_by(ProductModel.date_modified.desc()).all()
     # products_dict = ProductModel.serialize_all(products)
 
