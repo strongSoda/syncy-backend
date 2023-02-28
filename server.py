@@ -15,6 +15,8 @@ import os
 from datetime import datetime, timedelta
 import jwt
 from dotenv import load_dotenv
+import requests
+
 
 load_dotenv()
 
@@ -53,7 +55,7 @@ migrate = Migrate(app, db, compare_type=True)
 from algoliasearch.search_client import SearchClient
 # # API keys below contain actual values tied to your Algolia account
 client = SearchClient.create('L7PFECEWC3', 'e03caa75dd335df7a8fefb1f0e3b6e27')
-index = client.init_index('syncy')
+# index = client.init_index('syncy')
 
 
 YOUR_DOMAIN = 'https://syncy.net'
@@ -70,6 +72,38 @@ def upload_image_to_imgur(image):
     data = json.loads(r.text)
     print(data)
     return data['data']['link']
+
+@app.route('/update-algolia', methods=['GET', 'POST'])
+def update_algolia_index():
+
+    # get url from request
+    url = request.args.get('url')
+    # get objectID from request
+    objectID = request.args.get('objectID')
+
+    influencer = request.json["influencer"]
+
+    print('here 2 **********',url, objectID)
+
+    index = client.init_index('influencers')
+
+    influencer["imageUrl"] = url
+
+    res = index.save_object(influencer, {'autoGenerateObjectIDIfNotExist': True}).wait()
+
+    # res = index.partial_update_object(
+    #     {
+    #         'objectID': objectID,
+    #         'profilePicUrl': url,
+    #     }
+    # ).wait()
+
+    print('here 3 **********', objectID, res.raw_responses)
+    # record = index.get_object(objectID)
+    # print(record)
+
+    return jsonify({'success': True, 'message': 'updated algolia index'})
+
 
 """models"""
 
@@ -141,46 +175,25 @@ class Base(db.Model, SerializerMixin):
         return commit and db.session.commit()
 
 # user profile model with name, linkedin url, calendly url, profile image url, city, country, bio and tags
-class TargetUserProfileModel(Base):
-    __tablename__ = 'target_user_profile'
+class BrandUserProfileModel(Base):
+    __tablename__ = 'brand_user_profile'
 
-    name = db.Column(db.String(100), nullable=False)
+    # First Name, Last Name, job title, company name, company website, company logo, company description, company address, company email, company instagram, linkedin url 
     email = db.Column(db.String(200), nullable=False)
-    linkedin_url = db.Column(db.String(255))
-    calendly_url = db.Column(db.String(255), nullable=False)
-    profile_image_url = db.Column(db.String(250), nullable=False)
-    city = db.Column(db.String(100), nullable=False)
-    country = db.Column(db.String(100), nullable=False)
-    bio = db.Column(db.String(600), nullable=False)
-    payment_info = db.Column(db.String(600))
-    # referer name
-    referer = db.Column(db.String(200))
-    
-    instagram_url = db.Column(db.String(255))
-    tiktok_url = db.Column(db.String(255))
-    website_url = db.Column(db.String(255))
-    # column to store rate
-    rate = db.Column(db.Integer)
-
-    def __init__(self, name, email, linkedin_url, calendly_url, profile_image_url, city, country, bio, payment_info, referer, instagram_url, tiktok_url, website_url, rate):
-        self.name = name
-        self.email = email
-        self.linkedin_url = linkedin_url
-        self.calendly_url = calendly_url
-        self.profile_image_url = profile_image_url
-        self.city = city
-        self.country = country
-        self.bio = bio
-        self.payment_info = payment_info
-        self.referer = referer
-        self.instagram_url = instagram_url
-        self.tiktok_url = tiktok_url
-        self.website_url = website_url
-        self.rate = rate
+    first_name = db.Column(db.String(200))
+    last_name = db.Column(db.String(200))
+    job_title = db.Column(db.String(200))
+    company_name = db.Column(db.String(200))
+    company_website = db.Column(db.String(200))
+    company_description = db.Column(db.String(200))
+    company_address = db.Column(db.String(200))
+    company_email = db.Column(db.String(200))
+    company_instagram = db.Column(db.String(200))
+    company_linkedin = db.Column(db.String(200))
+    company_logo = db.Column(db.String(200))
 
     def __repr__(self):
         return '<id {}>'.format(self.id)
-
 
 # tags model with name
 class TagsModel(Base):
@@ -265,7 +278,7 @@ class CompanyUserMapModel(Base):
 """home route"""
 
 
-@app.route('/')
+@app.route('/', methods=['POST', 'GET'])
 def hello():
     # products = ProductModel.query.order_by(ProductModel.date_modified.desc()).all()
     # products_dict = ProductModel.serialize_all(products)
@@ -283,541 +296,147 @@ def hello():
     #     index.save_object(product)
 
     # print('##', index, products_dict)
+
+    # get imageUrl from request body
+    image_url = request.json['imageUrl']
+    username = request.args.get('username')
+
+    # print(image_url)
+
+    # download image
+
+    # image = requests.get(image_url).content
+
+    # import urllib.request
+
+    # urllib.request.urlretrieve(image_url, username + '.jpg')
+
+    import urllib
+    resource = urllib.request.urlopen(image_url)
+    output = open('-'.join(username.strip().replace('/', '').split(' ')) + '.jpg',"wb")
+    output.write(resource.read())
+    output.close()
+
+    print('here++++++++++')
+    # print(requests)
+    # save image to local
+
+    # f = open(username + '.jpg', 'wb')
+    # f.write(image)
+    # f.close()
+
+    # upload image to imgur
+
+    f = open('-'.join(username.strip().replace('/', '').split(' ')) + '.jpg', 'rb')
+    res = upload_image_to_imgur(image=f)
+    print(res)
+    f.close()
+
+    return {"url": res}
+    # upload image to imgur
+    files = dict(
+        image=(None, image_url),
+        name=(None, ''),
+        type=(None, 'URL'),
+        )
+
     return {"hello": "world"}
 
 
-"""target user profile routes"""
-# create new target user profile
-@app.route('/target_user_profile', methods=['POST'])
-def create_target_user_profile():
-    # data = request.get_json()
-    data =dict()
-    data['name'] = request.form.get('name')
-    data['email'] = request.form.get('email')
-    data['linkedin_url'] = request.form.get('linkedin')
-    data['calendly_url'] = request.form.get('calendly')
-    data['bio'] = request.form.get('bio-max-250-characters')
-    data['city'] = request.form.get('city')
-    data['country'] = request.form.get('country')
-    data['tags'] = [tag.strip() for tag in request.form.get('tags-eg-doctor-parent-student-designer-etc-at-least-2-tags-comma-separated').split(',')]
-    data['school'] = [tag.strip() for tag in request.form.get('schools-you-attended-eg-harvard-london-university-etc-comma-separated').split(',')]
-    data['company'] = [tag.strip() for tag in request.form.get('companies-you-have-worked-for-eg-google-spotify-etc-comma-separated').split(',')]
-    data['payment_info'] = request.form.get('payment-info-paypal-email-or-venmo-id')
-    data['referer'] = request.form.get('referrer-name')
-    data['instagram_url'] = request.form.get('instagram')
-    data['tiktok_url'] = request.form.get('tiktok')
-    data['website_url'] = request.form.get('website')
-    data['rate'] = request.form.get('rate')
+# save brand user profile
+@app.route('/brand_user_profile', methods=['POST'])
+def create_brand_user_profile():
+    post_data = request.get_json()
+    
+    email = post_data.get('email')
+    first_name = post_data.get('firstName')
+    last_name = post_data.get('lastName')
+    company_name = post_data.get('companyName')
+    company_website = request.json['companyWebsite']
+    company_logo = request.json['companyLogo']
+    company_address = request.json['companyAddress']
+    company_instagram = request.json['companyInstagram']
+    company_linkedin = request.json['companyLinkedin']
+    company_email = request.json['companyEmail']
+    job_title = request.json['jobTitle']
+    company_description = request.json['companyDescription']
 
-    # get profile image from request form
-    profile_image = request.files['profile-image'] 
-    #  upload profile image to imgur and get the url
-    data['profile_image_url'] = upload_image_to_imgur(profile_image)
-    print(data, profile_image)
-    try:
-        new_target_user_profile = TargetUserProfileModel.create(
-            name=data['name'],
-            email=data['email'],
-            linkedin_url=data['linkedin_url'],
-            calendly_url=data['calendly_url'],
-            profile_image_url=data['profile_image_url'],
-            city=data['city'],
-            country=data['country'],
-            bio=data['bio'],
-            payment_info=data['payment_info'],
-            referer=data['referer'],
-            instagram_url=data['instagram_url'],
-            tiktok_url=data['tiktok_url'],
-            website_url=data['website_url'],
-            rate=data['rate']
-        )
-        # create tags if dont exist and map them to user
-        for tag in data['tags']:
-            # check case and remove spaces
-            tag = tag.strip().lower()
-            # check if tag exists
-            tag_exists = TagsModel.query.filter_by(name=tag).first()
-            if tag_exists:
-                # map tag to user
-                TagsUserMapModel.create(
-                    user_id=new_target_user_profile.id,
-                    tag_id=tag_exists.id
-                )
-            else:
-                # create tag and map to user
-                new_tag = TagsModel.create(
-                    name=tag
-                )
-                TagsUserMapModel.create(
-                    user_id=new_target_user_profile.id,
-                    tag_id=new_tag.id
-                )
+    # check if user exists
 
-        # create schools if dont exist and map them to user
-        for school in data['school']:
-            # check case and remove spaces
-            school = school.strip().lower()
-            # check if school exists
-            school_exists = SchoolModel.query.filter_by(name=school).first()
-            if school_exists:
-                # map school to user
-                SchoolUserMapModel.create(
-                    user_id=new_target_user_profile.id,
-                    school_id=school_exists.id
-                )
-            else:
-                # create school and map to user
-                new_school = SchoolModel.create(
-                    name=school
-                )
-                SchoolUserMapModel.create(
-                    user_id=new_target_user_profile.id,
-                    school_id=new_school.id
-                )
-        
-        # create companies if dont exist and map them to user
-        for company in data['company']:
-            # check case and remove spaces
-            company = company.strip().lower()
-            # check if company exists
-            company_exists = CompanyModel.query.filter_by(name=company).first()
-            if company_exists:
-                # map company to user
-                CompanyUserMapModel.create(
-                    user_id=new_target_user_profile.id,
-                    company_id=company_exists.id
-                )
-            else:
-                # create company and map to user
-                new_company = CompanyModel.create(
-                    name=company
-                )
-                CompanyUserMapModel.create(
-                    user_id=new_target_user_profile.id,
-                    company_id=new_company.id
-                )
-        
+    user = BrandUserProfileModel.query.filter_by(email=email).first()
+    
+    # if user exists, update user, else create user
+    if user:
+        user.first_name = first_name
+        user.last_name = last_name
+        user.job_title = job_title
+        user.company_name = company_name
+        user.company_website = company_website
+        user.company_logo = company_logo
+        user.company_address = company_address
+        user.company_instagram = company_instagram
+        user.company_linkedin = company_linkedin
+        user.company_email = company_email
+        user.company_description = company_description
 
-        
-        # send to algolia
-        new_target_user_profile_dict = TargetUserProfileModel.serialize(new_target_user_profile)
-        print('##', new_target_user_profile_dict)
-        new_target_user_profile_dict['objectID'] = new_target_user_profile_dict['id']
-        print('## 2', new_target_user_profile_dict)
-        
-        CATEGORIES = []
-        # Index the product with Algolia
-        for c in data['tags']:
-            CATEGORIES.append(c.strip())
-        new_target_user_profile_dict['categories'] = CATEGORIES
-
-        SCHOOLS = []
-        # Index the product with Algolia
-        for c in data['school']:
-            SCHOOLS.append(c.strip())
-        new_target_user_profile_dict['schools'] = SCHOOLS
-
-        COMPANIES = []
-        # Index the product with Algolia
-        for c in data['company']:
-            COMPANIES.append(c.strip())
-        new_target_user_profile_dict['companies'] = COMPANIES
-        
-        print('## 3', new_target_user_profile_dict)
-        index.save_object(new_target_user_profile_dict)
-        print('## 4', new_target_user_profile_dict)
-        # return new_target_user_profile_dict
-        responseObject = {
-            'status': 'success',
-            'data': {
-                'user': TargetUserProfileModel.serialize(new_target_user_profile),
-            },
-        }
-        print('## 5', responseObject)
-        # redirect to home page
-        return redirect(f"https://syncy.net/?syncy%5Bquery%5D={new_target_user_profile.name}", code=302)
-        # return redirect(f"https://syncy.me/{new_target_user_profile.id}", code=302)
-        # return make_response(jsonify(responseObject)), 200
-    except exc.IntegrityError as e:
-        print(str(e))
-        responseObject = {
-            'status': 'fail',
-            'message': 'Profile Already Exists.'
-        }
-        return (
-            make_response(jsonify(responseObject)),
-            500,
-        )
-    except Exception as e:
-        print(str(e))
-        responseObject = {
-            'status': 'fail',
-            'message': 'Something went wrong.'
-        }
-        return (
-            make_response(jsonify(responseObject)),
-            500,
-        )
-
-# get all target user profiles with pagination
-@app.route('/target_user_profiles', methods=['GET'])
-def get_target_user_profiles():
-    page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('per_page', 10, type=int)
-    target_user_profiles = TargetUserProfileModel.query.paginate(page, per_page, error_out=False)
-    target_user_profiles_dict = TargetUserProfileModel.serialize_all(target_user_profiles.items)
-    responseObject = {
-        'status': 'success',
-        'data': {
-            'target_user_profiles': target_user_profiles_dict,
-            'total': target_user_profiles.total,
-            'pages': target_user_profiles.pages,
-            'page': target_user_profiles.page,
-            'per_page': target_user_profiles.per_page,
-        },
-    }
-    return make_response(jsonify(responseObject)), 200
-
-# get target user profile by id
-@app.route('/target_user_profile/<int:id>', methods=['GET'])
-def get_target_user_profile(id):
-    target_user_profile = TargetUserProfileModel.query.get(id)
-    if not target_user_profile:
-        responseObject = {
-            'status': 'fail',
-            'message': 'Target User Profile does not exist.'
-        }
-        return (
-            make_response(jsonify(responseObject)),
-            404,
-        )
-    responseObject = {
-        'status': 'success',
-        'data': {
-            'target_user_profile': TargetUserProfileModel.serialize(target_user_profile),
-        },
-    }
-    return make_response(jsonify(responseObject)), 200
-
-# update target user profile by id
-@app.route('/target_user_profile/<int:id>', methods=['PUT'])
-def update_target_user_profile(id):
-    target_user_profile = TargetUserProfileModel.query.get(id)
-    if not target_user_profile:
-        responseObject = {
-            'status': 'fail',
-            'message': 'Target User Profile does not exist.'
-        }
-        return (
-            make_response(jsonify(responseObject)),
-            404,
-        )
-    data = request.get_json()
-    try:
-        target_user_profile.name = data['name']
-        target_user_profile.email = data['email']
-        target_user_profile.linkedin_url = data['linkedin_url']
-        target_user_profile.calendly_url = data['calendly_url']
-        target_user_profile.profile_image_url = data['profile_image_url']
-        target_user_profile.city = data['city']
-        target_user_profile.country = data['country']
-        target_user_profile.bio = data['bio']
-        target_user_profile.tags = data['tags']
+        # save user
+        db.session.add(user)
         db.session.commit()
-        responseObject = {
+
+        response_object = {
             'status': 'success',
-            'data': {
-                'target_user_profile': TargetUserProfileModel.serialize(target_user_profile),
-            },
+            'message': 'Successfully updated.'
         }
-        return make_response(jsonify(responseObject)), 200
-    except exc.IntegrityError as e:
-        print(str(e))
-        responseObject = {
-            'status': 'fail',
-            'message': 'Profile Already Exists.'
-        }
-        return (
-            make_response(jsonify(responseObject)),
-            500,
-        )
-    except Exception as e:
-        print(str(e))
-        responseObject = {
-            'status': 'fail',
-            'message': 'Something went wrong.'
-        }
-        return (
-            make_response(jsonify(responseObject)),
-            500,
+        return jsonify(response_object), 201
+        
+    else:
+        # create new user
+        new_user = BrandUserProfileModel(
+            email=email,
+            first_name=first_name,
+            last_name=last_name,
+            job_title=job_title,
+            company_name=company_name,
+            company_website=company_website,
+            company_logo=company_logo,
+            company_address=company_address,
+            company_instagram=company_instagram,
+            company_linkedin=company_linkedin,
+            company_email=company_email,
+            company_description=company_description
         )
 
-# delete target user profile by id
-@app.route('/target_user_profile/<int:id>', methods=['DELETE'])
-def delete_target_user_profile(id):
-    target_user_profile = TargetUserProfileModel.query.get(id)
-    if not target_user_profile:
-        responseObject = {
-            'status': 'fail',
-            'message': 'Target User Profile does not exist.'
-        }
-        return (
-            make_response(jsonify(responseObject)),
-            404,
-        )
-    db.session.delete(target_user_profile)
-    db.session.commit()
-    responseObject = {
-        'status': 'success',
-        'message': 'Target User Profile deleted successfully.',
-    }
-    return make_response(jsonify(responseObject)), 200
+        # save user
+        db.session.add(new_user)
+        db.session.commit()
 
-# get all target user profiles by tag
-@app.route('/target_user_profiles_by_tag', methods=['GET'])
-def get_target_user_profiles_by_tag():
-    tag = request.args.get('tag', None, type=str)
-    if not tag:
-        responseObject = {
-            'status': 'fail',
-            'message': 'Tag is required.'
+        response_object = {
+            'status': 'success',
+            'message': 'Successfully registered.'
         }
-        return (
-            make_response(jsonify(responseObject)),
-            404,
-        )
-    target_user_profiles = TargetUserProfileModel.query.filter(TargetUserProfileModel.tags.contains(tag)).all()
-    target_user_profiles_dict = TargetUserProfileModel.serialize_all(target_user_profiles)
-    responseObject = {
-        'status': 'success',
-        'data': {
-            'target_user_profiles': target_user_profiles_dict,
-        },
-    }
-    return make_response(jsonify(responseObject)), 200
+        return jsonify(response_object), 201
 
-# get all target user profiles by city
-@app.route('/target_user_profiles_by_city', methods=['GET'])
-def get_target_user_profiles_by_city():
-    city = request.args.get('city', None, type=str)
-    if not city:
-        responseObject = {
-            'status': 'fail',
-            'message': 'City is required.'
-        }
-        return (
-            make_response(jsonify(responseObject)),
-            404,
-        )
-    target_user_profiles = TargetUserProfileModel.query.filter_by(city=city).all()
-    target_user_profiles_dict = TargetUserProfileModel.serialize_all(target_user_profiles)
-    responseObject = {
-        'status': 'success',
-        'data': {
-            'target_user_profiles': target_user_profiles_dict,
-        },
-    }
-    return make_response(jsonify(responseObject)), 200
+# get brand user profile
+@app.route('/brand_user_profile', methods=['GET'])
+def get_brand_user_profile():
+    email = request.args.get('email')
+    user = BrandUserProfileModel.query.filter_by(email=email).first()
 
-# get all target user profiles by country
-@app.route('/target_user_profiles_by_country', methods=['GET'])
-def get_target_user_profiles_by_country():
-    country = request.args.get('country', None, type=str)
-    if not country:
-        responseObject = {
-            'status': 'fail',
-            'message': 'Country is required.'
+    if user:
+        response_object = {
+            'code': '200',
+            'status': 'success',
+            'message': 'User profile found.',
+            'data': BrandUserProfileModel.serialize(user)
         }
-        return (
-            make_response(jsonify(responseObject)),
-            404,
-        )
-    target_user_profiles = TargetUserProfileModel.query.filter_by(country=country).all()
-    target_user_profiles_dict = TargetUserProfileModel.serialize_all(target_user_profiles)
-    responseObject = {
-        'status': 'success',
-        'data': {
-            'target_user_profiles': target_user_profiles_dict,
-        },
-    }
-    return make_response(jsonify(responseObject)), 200
-
-# get all target user profiles by city and country
-@app.route('/target_user_profiles_by_city_and_country', methods=['GET'])
-def get_target_user_profiles_by_city_and_country():
-    city = request.args.get('city', None, type=str)
-    country = request.args.get('country', None, type=str)
-    if not city:
-        responseObject = {
+        return jsonify(response_object), 200
+    else:
+        response_object = {
+            'code': '400',
             'status': 'fail',
-            'message': 'City is required.'
+            'message': 'User profile not found.',
         }
-        return (
-            make_response(jsonify(responseObject)),
-            404,
-        )
-    if not country:
-        responseObject = {
-            'status': 'fail',
-            'message': 'Country is required.'
-        }
-        return (
-            make_response(jsonify(responseObject)),
-            404,
-        )
-    target_user_profiles = TargetUserProfileModel.query.filter_by(city=city, country=country).all()
-    target_user_profiles_dict = TargetUserProfileModel.serialize_all(target_user_profiles)
-    responseObject = {
-        'status': 'success',
-        'data': {
-            'target_user_profiles': target_user_profiles_dict,
-        },
-    }
-    return make_response(jsonify(responseObject)), 200
-
-# get all target user profiles by city and country and tag
-@app.route('/target_user_profiles_by_city_and_country_and_tag', methods=['GET'])
-def get_target_user_profiles_by_city_and_country_and_tag():
-    city = request.args.get('city', None, type=str)
-    country = request.args.get('country', None, type=str)
-    tag = request.args.get('tag', None, type=str)
-    if not city:
-        responseObject = {
-            'status': 'fail',
-            'message': 'City is required.'
-        }
-        return (
-            make_response(jsonify(responseObject)),
-            404,
-        )
-    if not country:
-        responseObject = {
-            'status': 'fail',
-            'message': 'Country is required.'
-        }
-        return (
-            make_response(jsonify(responseObject)),
-            404,
-        )
-    if not tag:
-        responseObject = {
-            'status': 'fail',
-            'message': 'Tag is required.'
-        }
-        return (
-            make_response(jsonify(responseObject)),
-            404,
-        )
-    target_user_profiles = TargetUserProfileModel.query.filter_by(city=city, country=country).filter(TargetUserProfileModel.tags.contains(tag)).all()
-    target_user_profiles_dict = TargetUserProfileModel.serialize_all(target_user_profiles)
-    responseObject = {
-        'status': 'success',
-        'data': {
-            'target_user_profiles': target_user_profiles_dict,
-        },
-    }
-    return make_response(jsonify(responseObject)), 200
-
-# get all target user profiles by city and tag
-@app.route('/target_user_profiles_by_city_and_tag', methods=['GET'])
-def get_target_user_profiles_by_city_and_tag():
-    city = request.args.get('city', None, type=str)
-    tag = request.args.get('tag', None, type=str)
-    if not city:
-        responseObject = {
-            'status': 'fail',
-            'message': 'City is required.'
-        }
-        return (
-            make_response(jsonify(responseObject)),
-            404,
-        )
-    if not tag:
-        responseObject = {
-            'status': 'fail',
-            'message': 'Tag is required.'
-        }
-        return (
-            make_response(jsonify(responseObject)),
-            404,
-        )
-    target_user_profiles = TargetUserProfileModel.query.filter_by(city=city).filter(TargetUserProfileModel.tags.contains(tag)).all()
-    target_user_profiles_dict = TargetUserProfileModel.serialize_all(target_user_profiles)
-    responseObject = {
-        'status': 'success',
-        'data': {
-            'target_user_profiles': target_user_profiles_dict,
-        },
-    }
-    return make_response(jsonify(responseObject)), 200
-
-
-# get all target user profiles by country and tag
-@app.route('/target_user_profiles_by_country_and_tag', methods=['GET'])
-def get_target_user_profiles_by_country_and_tag():
-    country = request.args.get('country', None, type=str)
-    tag = request.args.get('tag', None, type=str)
-    if not country:
-        responseObject = {
-            'status': 'fail',
-            'message': 'Country is required.'
-        }
-        return (
-            make_response(jsonify(responseObject)),
-            404,
-        )
-    if not tag:
-        responseObject = {
-            'status': 'fail',
-            'message': 'Tag is required.'
-        }
-        return (
-            make_response(jsonify(responseObject)),
-            404,
-        )
-    target_user_profiles = TargetUserProfileModel.query.filter_by(country=country).filter(TargetUserProfileModel.tags.contains(tag)).all()
-    target_user_profiles_dict = TargetUserProfileModel.serialize_all(target_user_profiles)
-    responseObject = {
-        'status': 'success',
-        'data': {
-            'target_user_profiles': target_user_profiles_dict,
-        },
-    }
-    return make_response(jsonify(responseObject)), 200
-
-# search target user profiles by name or city or country or tag or bio with pagination
-@app.route('/target_user_profiles_search', methods=['GET'])
-def get_target_user_profiles_search():
-    search = request.args.get('search', None, type=str)
-    page = request.args.get('page', 1, type=int)
-    if not search:
-        responseObject = {
-            'status': 'fail',
-            'message': 'Search is required.'
-        }
-        return (
-            make_response(jsonify(responseObject)),
-            404,
-        )
-    target_user_profiles = TargetUserProfileModel.query.filter(
-        or_(
-            TargetUserProfileModel.name.like('%' + search + '%'),
-            TargetUserProfileModel.city.like('%' + search + '%'),
-            TargetUserProfileModel.country.like('%' + search + '%'),
-            TargetUserProfileModel.tags.like('%' + search + '%'),
-            TargetUserProfileModel.bio.like('%' + search + '%'),
-        )
-    ).paginate(page=page, per_page=10, error_out=False)
-    target_user_profiles_dict = TargetUserProfileModel.serialize_all(target_user_profiles.items)
-    responseObject = {
-        'status': 'success',
-        'data': {
-            'target_user_profiles': target_user_profiles_dict,
-            'total_pages': target_user_profiles.pages,
-            'total_items': target_user_profiles.total,
-        },
-    }
-    return make_response(jsonify(responseObject)), 200
+        return jsonify(response_object), 400
 
 # Create a Checkout Session
 @app.route('/create-checkout-session', methods=['POST'])
@@ -908,4 +527,4 @@ def download_all_target_user_profiles():
     return render_template('download_all_target_user_profiles.html') 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(port=8000, debug=True)
