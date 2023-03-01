@@ -195,6 +195,35 @@ class BrandUserProfileModel(Base):
     def __repr__(self):
         return '<id {}>'.format(self.id)
 
+
+class InfluencerProfileModel(Base):
+    __tablename__ = 'influencer_profile'
+
+    # First Name, Last Name, job title, company name, company website, company logo, company description, company address, company email, company instagram, linkedin url 
+    email = db.Column(db.String(200), nullable=False)
+    first_name = db.Column(db.String(200))
+    last_name = db.Column(db.String(200))
+    bio = db.Column(db.String(200))
+    city = db.Column(db.String(200))
+    image_url = db.Column(db.String(200))
+    calender_url = db.Column(db.String(200))
+
+    # instagram username, followers count, rate, category, hashtags, top post url 1, top post url 2, top post url 3, sponsored post url 1, sponsored post url 2, sponsored post url 3
+    instagram_username = db.Column(db.String(200))
+    followers_count = db.Column(db.Integer)
+    rate = db.Column(db.Integer)
+    category = db.Column(db.String(200))
+    hashtags = db.Column(db.String(200))
+    top_post_url_1 = db.Column(db.String(200))
+    top_post_url_2 = db.Column(db.String(200))
+    top_post_url_3 = db.Column(db.String(200))
+    sponsored_post_url_1 = db.Column(db.String(200))
+    sponsored_post_url_2 = db.Column(db.String(200))
+    sponsored_post_url_3 = db.Column(db.String(200))
+
+    def __repr__(self):
+        return '<id {}>'.format(self.id)
+
 # tags model with name
 class TagsModel(Base):
     __tablename__ = 'tags'
@@ -441,6 +470,208 @@ def get_brand_user_profile():
             'message': 'User profile not found.',
         }
         return jsonify(response_object), 400
+
+
+# save influencer profile
+@app.route('/influencer-profile-personal', methods=['POST'])
+def create_influencer_profile_personal():
+    post_data = request.get_json()
+    
+    email = post_data.get('email')
+    first_name = post_data.get('firstName')
+    last_name = post_data.get('lastName')
+    image_url = post_data.get('imageUrl')
+    city = post_data.get('city')
+    bio = post_data.get('bio')
+    calender_url = post_data.get('bookCallInfo')
+
+    print(email, first_name, last_name, image_url, city, bio, calender_url)
+
+    # check if user exists
+
+    user = InfluencerProfileModel.query.filter_by(email=email).first()
+    
+    # if user exists, update user, else create user
+    if user:
+        user.first_name = first_name
+        user.last_name = last_name
+        user.image_url = image_url
+        user.city = city
+        user.bio = bio
+        user.calender_url = calender_url
+
+        # save user
+        db.session.add(user)
+        db.session.commit()
+
+        # save to algolia index "influencers"
+        index = client.init_index('influencers')
+        index.partial_update_object({
+            'objectID': user.id,
+            'email': user.email,
+            'firstName': user.first_name,
+            'lastName': user.last_name,
+            'fullName': user.first_name + ' ' + user.last_name,
+            'imageUrl': user.image_url,
+            'city': user.city,
+            'bio': user.bio,
+            'bookCallInfo': user.calender_url,
+        })
+
+        response_object = {
+            'status': 'success',
+            'message': 'Successfully updated.'
+        }
+        return jsonify(response_object), 201
+    
+    else:
+        try:
+            # create new user
+            new_user = InfluencerProfileModel(
+                email=email,
+                first_name=first_name,
+                last_name=last_name,
+                image_url=image_url,
+                city=city,
+                bio=bio,
+                calender_url=calender_url
+            )
+
+            print(new_user)
+
+            # save user
+            db.session.add(new_user)
+            db.session.commit()
+
+            # save to algolia index "influencers"
+            index = client.init_index('influencers')
+            index.save_object({
+                'objectID': new_user.id,
+                'email': new_user.email,
+                'firstName': new_user.first_name,
+                'lastName': new_user.last_name,
+                'fullName': new_user.first_name + ' ' + new_user.last_name,
+                'imageUrl': new_user.image_url,
+                'city': new_user.city,
+                'bio': new_user.bio,
+                'bookCallInfo': new_user.calender_url,
+            })
+
+            response_object = {
+                'status': 'success',
+                'message': 'Successfully registered.'
+            }
+            return jsonify(response_object), 201
+
+        except Exception as e:
+            print(e)
+            response_object = {
+                'status': 'fail',
+                'message': 'Some error occurred. Please try again.'
+            }
+            return jsonify(response_object), 401
+
+# get influencer profile
+@app.route('/influencer-profile-personal', methods=['GET'])
+def get_influencer_profile_personal():
+    email = request.args.get('email')
+    user = InfluencerProfileModel.query.filter_by(email=email).first()
+
+    if user:
+        response_object = {
+            'code': '200',
+            'status': 'success',
+            'message': 'User profile found.',
+            'data': InfluencerProfileModel.serialize(user)
+        }
+        return jsonify(response_object), 200
+    else:
+        response_object = {
+            'code': '400',
+            'status': 'fail',
+            'message': 'User profile not found.',
+        }
+        return jsonify(response_object), 400
+
+
+# save influencer profile instagram
+@app.route('/influencer-profile-instagram', methods=['POST'])
+def create_influencer_profile_instagram():
+    post_data = request.get_json()
+
+    email = post_data.get('email')
+    instagram_username = post_data.get('username')
+    followers_count = post_data.get('followersCount')
+    rate = post_data.get('rate')
+    category = post_data.get('category')
+    hashtags = post_data.get('hashtags')
+    top_post_url_1 = post_data.get('topPostUrl1')
+    top_post_url_2 = post_data.get('topPostUrl2')
+    top_post_url_3 = post_data.get('topPostUrl3')
+    sponsored_post_url_1 = post_data.get('sponsoredPostUrl1')
+    sponsored_post_url_2 = post_data.get('sponsoredPostUrl2')
+    sponsored_post_url_3 = post_data.get('sponsoredPostUrl3')
+
+    print(email, instagram_username, followers_count, rate, category, hashtags, top_post_url_1, top_post_url_2, top_post_url_3, sponsored_post_url_1, sponsored_post_url_2, sponsored_post_url_3)
+
+    # check if user exists
+    user = InfluencerProfileModel.query.filter_by(email=email).first()
+
+    # if user exists, update user, else create user
+    if user:
+        user.instagram_username = instagram_username
+        user.followers_count = followers_count
+        user.rate = rate
+        user.category = category
+        user.hashtags = hashtags
+        user.top_post_url_1 = top_post_url_1
+        user.top_post_url_2 = top_post_url_2
+        user.top_post_url_3 = top_post_url_3
+        user.sponsored_post_url_1 = sponsored_post_url_1
+        user.sponsored_post_url_2 = sponsored_post_url_2
+        user.sponsored_post_url_3 = sponsored_post_url_3
+
+        # save user
+        db.session.add(user)
+        db.session.commit()
+
+        # save to algolia index "influencers"
+        index = client.init_index('influencers')
+        index.partial_update_object({
+            'objectID': user.id,
+            'email': user.email,
+            'firstName': user.first_name,
+            'lastName': user.last_name,
+            'fullName': user.first_name + ' ' + user.last_name,
+            'imageUrl': user.image_url,
+            'city': user.city,
+            'bio': user.bio,
+            'bookCallInfo': user.calender_url,
+            'instagramUsername': user.instagram_username,
+            'followersCount': user.followers_count,
+            'rate': user.rate,
+            'category': user.category,
+            'hashtags': user.hashtags,
+            'topPostUrl1': user.top_post_url_1,
+            'topPostUrl2': user.top_post_url_2,
+            'topPostUrl3': user.top_post_url_3,
+            'sponsoredPostUrl1': user.sponsored_post_url_1,
+            'sponsoredPostUrl2': user.sponsored_post_url_2,
+            'sponsoredPostUrl3': user.sponsored_post_url_3,
+        })
+
+        response_object = {
+            'status': 'success',
+            'message': 'Successfully updated.'
+        }
+        return jsonify(response_object), 201
+    else:
+        response_object = {
+            'status': 'fail',
+            'message': 'User not found.'
+        }
+        return jsonify(response_object), 401
+
 
 # Create a Checkout Session
 @app.route('/create-checkout-session', methods=['POST'])
