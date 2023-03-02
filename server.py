@@ -728,12 +728,12 @@ def get_brand_influencer_channel_map():
     brand_email = request.args.get('brandEmail')
 
     print(influencer_email, brand_email)
-    influencer_email = "influencer+imran@syncy.net"
+    # influencer_email = "influencer+imran@syncy.net"
 
     # check if mapping exists
     mapping = BrandInfluencerChannelMapModel.query.filter_by(brand_email=brand_email, influencer_email=influencer_email).first()
 
-    # if mapping exists, return success, else create mapping
+    # if mapping exists, return success, else return false
     if mapping:
         response_object = {
             'status': 'success',
@@ -807,6 +807,38 @@ def update_stream_chat_channel_members():
             'message': str(e)
         }
         return jsonify(response_object), 405
+
+# send message to channel in stream chat
+@app.route('/stream-chat-send-message', methods=['POST'])
+def send_stream_chat_message():
+    post_data = request.get_json()
+
+    channel_id = post_data.get('channelId')
+    user_id = post_data.get('userId')
+    message = {"text": post_data.get('message')}
+
+    # pip install stream-chat
+    import stream_chat
+    server_client = stream_chat.StreamChat(api_key="f2hpu5up29pk", api_secret="wvkczyfdngnq4cx6x3pg5gp6t6u687z4zavsdpfgjkyfqt2n29wv7fagvrueemv7")
+    channel = server_client.channel('messaging', channel_id)
+
+    try:
+        # send message to channel
+        channel.send_message(message, user_id)
+
+        response_object = {
+            'status': 'success',
+            'message': 'Successfully sent.'
+        }
+        return jsonify(response_object), 201
+    except Exception as e:
+        print(e)
+        response_object = {
+            'status': 'fail',
+            'message': str(e)
+        }
+        return jsonify(response_object), 405
+
 
 # Create a Checkout Session
 @app.route('/create-checkout-session', methods=['POST'])
