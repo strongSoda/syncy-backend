@@ -249,6 +249,16 @@ class TagsUserMapModel(Base):
 
     def __repr__(self):
         return '<id {}>'.format(self.id)
+    
+class BrandInfluencerChannelMapModel(Base):
+    __tablename__ = 'brand_influencer_channel_map'
+
+    brand_email = db.Column(db.String(200), nullable=False)
+    influencer_email = db.Column(db.String(200), nullable=False)
+    channel_id = db.Column(db.String(200), nullable=False)
+
+    def __repr__(self):
+        return '<id {}>'.format(self.id)
 
 # school model with name
 class SchoolModel(Base):
@@ -673,6 +683,75 @@ def create_influencer_profile_instagram():
         return jsonify(response_object), 401
 
 
+# create brandinfluencerchannelmap
+@app.route('/brand-influencer-channel-map', methods=['POST'])
+def create_brand_influencer_channel_map():
+    post_data = request.get_json()
+
+    brand_email = post_data.get('brandEmail')
+    influencer_email = post_data.get('influencerEmail')
+    channel_id = post_data.get('channelId')
+
+    print(brand_email, influencer_email, channel_id)
+
+    # check if mapping exists
+    mapping = BrandInfluencerChannelMapModel.query.filter_by(brand_email=brand_email, influencer_email=influencer_email, channel_id=channel_id).first()
+    
+    # if mapping exists, return success, else create mapping
+    if mapping:
+        response_object = {
+            'status': 'success',
+            'message': 'Mapping already exists.'
+        }
+        return jsonify(response_object), 201
+    else:
+        new_mapping = BrandInfluencerChannelMapModel(
+            brand_email=brand_email,
+            influencer_email=influencer_email,
+            channel_id=channel_id
+        )
+
+        # save user
+        db.session.add(new_mapping)
+        db.session.commit()
+
+        response_object = {
+            'status': 'success',
+            'message': 'Successfully created.'
+        }
+        return jsonify(response_object), 201
+
+# get brandinfluencerchannelmap by influencer email and brand email
+@app.route('/brand-influencer-channel-map', methods=['GET'])
+def get_brand_influencer_channel_map():
+    influencer_email = request.args.get('influencerEmail')
+    brand_email = request.args.get('brandEmail')
+
+    print(influencer_email, brand_email)
+    influencer_email = "influencer+imran@syncy.net"
+
+    # check if mapping exists
+    mapping = BrandInfluencerChannelMapModel.query.filter_by(brand_email=brand_email, influencer_email=influencer_email).first()
+
+    # if mapping exists, return success, else create mapping
+    if mapping:
+        response_object = {
+            'status': 'success',
+            'message': 'Mapping exists.',
+            'data': {
+                'channelId': mapping.channel_id
+            }
+        }
+        return jsonify(response_object), 201
+    else:
+        response_object = {
+            'status': 'fail',
+            'message': 'Mapping does not exist.'
+        }
+        return jsonify(response_object), 401
+
+
+
 # create stream chat token
 @app.route('/stream-chat-token', methods=['GET'])
 def get_stream_chat_token():
@@ -699,7 +778,13 @@ def get_stream_chat_token():
 def update_stream_chat_channel_members():
     channel_id = request.args.get('channelId')
     user_id = request.args.get('userId')
+    email = request.args.get('email')
 
+    print(email)
+
+    user = InfluencerProfileModel.query.filter_by(email=email).first()
+
+    print(user)
     # pip install stream-chat
     import stream_chat
     
@@ -708,7 +793,7 @@ def update_stream_chat_channel_members():
 
     try:
         # add members to channel
-        channel.add_members([user_id])
+        channel.add_members([{'user_id': user_id, 'name': user.first_name + ' ' + user.last_name, 'image': user.image_url, 'text':  user.first_name + ' has joined the chat.',}])
 
         response_object = {
             'status': 'success',
