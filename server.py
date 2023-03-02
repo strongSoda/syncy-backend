@@ -673,6 +673,56 @@ def create_influencer_profile_instagram():
         return jsonify(response_object), 401
 
 
+# create stream chat token
+@app.route('/stream-chat-token', methods=['GET'])
+def get_stream_chat_token():
+    uid = request.args.get('uid')
+    # pip install stream-chat
+    import stream_chat
+
+    server_client = stream_chat.StreamChat(api_key="f2hpu5up29pk", api_secret="wvkczyfdngnq4cx6x3pg5gp6t6u687z4zavsdpfgjkyfqt2n29wv7fagvrueemv7")
+    token = server_client.create_token(uid)
+    print(token)
+
+    response_object = {
+        'status': 'success',
+        'message': 'Successfully created.',
+        'data': { 
+            'token': token
+        }
+    }
+    return jsonify(response_object), 201
+
+
+# update channel memebers in stream chat
+@app.route('/stream-chat-update-channel-members', methods=['GET'])
+def update_stream_chat_channel_members():
+    channel_id = request.args.get('channelId')
+    user_id = request.args.get('userId')
+
+    # pip install stream-chat
+    import stream_chat
+    
+    server_client = stream_chat.StreamChat(api_key="f2hpu5up29pk", api_secret="wvkczyfdngnq4cx6x3pg5gp6t6u687z4zavsdpfgjkyfqt2n29wv7fagvrueemv7")
+    channel = server_client.channel('messaging', channel_id)
+
+    try:
+        # add members to channel
+        channel.add_members([user_id])
+
+        response_object = {
+            'status': 'success',
+            'message': 'Successfully updated.'
+        }
+        return jsonify(response_object), 201
+    except Exception as e:
+        print(e)
+        response_object = {
+            'status': 'fail',
+            'message': str(e)
+        }
+        return jsonify(response_object), 405
+
 # Create a Checkout Session
 @app.route('/create-checkout-session', methods=['POST'])
 def create_checkout_session():
