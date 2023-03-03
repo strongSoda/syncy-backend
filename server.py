@@ -760,15 +760,15 @@ def get_brand_influencer_channel_map_by_influencer():
     # influencer_email = "
 
     # check if mapping exists
-    mapping = BrandInfluencerChannelMapModel.query.filter_by(influencer_email=influencer_email).first()
+    mappings = BrandInfluencerChannelMapModel.query.filter_by(influencer_email=influencer_email)
 
     # if mapping exists, return success, else return false
-    if mapping:
+    if mappings[0]:
         response_object = {
             'status': 'success',
             'message': 'Mapping exists.',
             'data': {
-                'channelId': mapping.channel_id
+                'mappings': BrandInfluencerChannelMapModel.serialize_all(mappings)
             }
         }
         return jsonify(response_object), 201
