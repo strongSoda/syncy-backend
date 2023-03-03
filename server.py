@@ -751,6 +751,34 @@ def get_brand_influencer_channel_map():
         return jsonify(response_object), 401
 
 
+# get brandinfluencerchannelmaps by influencer email
+@app.route('/brand-influencer-channel-map-by-influencer', methods=['GET'])
+def get_brand_influencer_channel_map_by_influencer():
+    influencer_email = request.args.get('influencerEmail')
+
+    print(influencer_email)
+    # influencer_email = "
+
+    # check if mapping exists
+    mapping = BrandInfluencerChannelMapModel.query.filter_by(influencer_email=influencer_email).first()
+
+    # if mapping exists, return success, else return false
+    if mapping:
+        response_object = {
+            'status': 'success',
+            'message': 'Mapping exists.',
+            'data': {
+                'channelId': mapping.channel_id
+            }
+        }
+        return jsonify(response_object), 201
+    else:
+        response_object = {
+            'status': 'fail',
+            'message': 'Mapping does not exist.'
+        }
+        return jsonify(response_object), 401
+
 
 # create stream chat token
 @app.route('/stream-chat-token', methods=['GET'])
