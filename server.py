@@ -808,18 +808,20 @@ def update_stream_chat_channel_members():
     user_id = request.args.get('userId')
     email = request.args.get('email')
 
-    print(email)
+    print(email, user_id, channel_id)
 
     user = InfluencerProfileModel.query.filter_by(email=email).first()
 
     print(user)
     # pip install stream-chat
-    import stream_chat
-    
-    server_client = stream_chat.StreamChat(api_key="f2hpu5up29pk", api_secret="wvkczyfdngnq4cx6x3pg5gp6t6u687z4zavsdpfgjkyfqt2n29wv7fagvrueemv7")
-    channel = server_client.channel('messaging', channel_id)
-
     try:
+        import stream_chat
+        
+        server_client = stream_chat.StreamChat(api_key="f2hpu5up29pk", api_secret="wvkczyfdngnq4cx6x3pg5gp6t6u687z4zavsdpfgjkyfqt2n29wv7fagvrueemv7")
+        channel = server_client.channel('messaging', channel_id)
+
+        print('channel', channel)
+
         # add members to channel
         channel.add_members([{'user_id': user_id, 'name': user.first_name + ' ' + user.last_name, 'image': user.image_url, 'text':  user.first_name + ' has joined the chat.',}])
 
