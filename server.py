@@ -750,6 +750,35 @@ def get_brand_influencer_channel_map():
         }
         return jsonify(response_object), 401
 
+# delete brandinfluencerchannelmap by influencer email and brand email
+@app.route('/brand-influencer-channel-map', methods=['DELETE'])
+def delete_brand_influencer_channel_map():
+    influencer_email = request.args.get('influencerEmail')
+    brand_email = request.args.get('brandEmail')
+
+    print(influencer_email, brand_email)
+    # influencer_email = 
+
+    # check if mapping exists
+    mapping = BrandInfluencerChannelMapModel.query.filter_by(brand_email=brand_email, influencer_email=influencer_email).first()
+
+    # if mapping exists, delete mapping, else return false
+    if mapping:
+        db.session.delete(mapping)
+        db.session.commit()
+
+        response_object = {
+            'status': 'success',
+            'message': 'Mapping deleted.'
+        }
+        return jsonify(response_object), 201
+    else:
+        response_object = {
+            'status': 'fail',
+            'message': 'Mapping does not exist.'
+        }
+        return jsonify(response_object), 401
+
 
 # get brandinfluencerchannelmaps by influencer email
 @app.route('/brand-influencer-channel-map-by-influencer', methods=['GET'])
