@@ -820,7 +820,7 @@ def get_brand_influencer_channel_map_by_brand():
     mappings = BrandInfluencerChannelMapModel.query.filter_by(brand_email=brand_email)
 
     # if mapping exists, return success, else return false
-    if mappings[0]:
+    if mappings:
         response_object = {
             'status': 'success',
             'message': 'Mapping exists.',
@@ -893,6 +893,34 @@ def update_stream_chat_channel_members():
             'message': str(e)
         }
         return jsonify(response_object), 405
+
+# create channel in stream chat with channel name and channel id
+@app.route('/stream-chat-create-channel', methods=['GET'])
+def create_stream_chat_channel():
+    channel_id = request.args.get('channelId')
+    channel_name = request.args.get('channelName')
+    user_id = request.args.get('userId')
+    image_url = request.args.get('imageUrl')
+    
+    import stream_chat
+    server_client = stream_chat.StreamChat(api_key="f2hpu5up29pk", api_secret="wvkczyfdngnq4cx6x3pg5gp6t6u687z4zavsdpfgjkyfqt2n29wv7fagvrueemv7")
+
+    print(channel_id, channel_name, user_id, image_url)
+
+    # create channel
+    channel = server_client.channel('messaging', channel_id, {'name': channel_name, 'image': image_url, 'members': [user_id]})
+    # Note: query method creates a channel
+    channel.create(user_id)
+
+    print('channel created', channel)
+
+    response_object = {
+        'status': 'success',
+        'message': 'Successfully created.',
+        # "data": {"channel": channel},
+    }
+    return jsonify(response_object), 201
+    
 
 # send message to channel in stream chat
 @app.route('/stream-chat-send-message', methods=['POST'])
