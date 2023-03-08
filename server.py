@@ -630,16 +630,16 @@ def create_influencer_profile_instagram():
     # if user exists, update user, else create user
     if user:
         user.instagram_username = instagram_username
-        user.followers_count = followers_count
-        user.rate = rate
-        user.category = category
-        user.hashtags = hashtags
-        user.top_post_url_1 = top_post_url_1
-        user.top_post_url_2 = top_post_url_2
-        user.top_post_url_3 = top_post_url_3
-        user.sponsored_post_url_1 = sponsored_post_url_1
-        user.sponsored_post_url_2 = sponsored_post_url_2
-        user.sponsored_post_url_3 = sponsored_post_url_3
+        user.followers_count = followers_count if followers_count else 0
+        user.rate = rate if rate else 0
+        user.category = category if category else ''
+        user.hashtags = hashtags if hashtags else ''
+        user.top_post_url_1 = top_post_url_1 if top_post_url_1 else ''
+        user.top_post_url_2 = top_post_url_2 if top_post_url_2 else ''
+        user.top_post_url_3 = top_post_url_3 if top_post_url_3 else ''
+        user.sponsored_post_url_1 = sponsored_post_url_1 if sponsored_post_url_1 else ''
+        user.sponsored_post_url_2 = sponsored_post_url_2 if sponsored_post_url_2 else ''
+        user.sponsored_post_url_3 = sponsored_post_url_3 if sponsored_post_url_3 else ''
 
         # save user
         db.session.add(user)
@@ -682,6 +682,27 @@ def create_influencer_profile_instagram():
         }
         return jsonify(response_object), 401
 
+# get influencer profile
+@app.route('/influencer-profile', methods=['GET'])
+def get_influencer_profile():
+    email = request.args.get('email')
+    user = InfluencerProfileModel.query.filter_by(email=email).first()
+
+    if user:
+        response_object = {
+            'code': '200',
+            'status': 'success',
+            'message': 'User profile found.',
+            'data': InfluencerProfileModel.serialize(user)
+        }
+        return jsonify(response_object), 200
+    else:
+        response_object = {
+            'code': '400',
+            'status': 'fail',
+            'message': 'User profile not found.',
+        }
+        return jsonify(response_object), 400
 
 # create brandinfluencerchannelmap
 @app.route('/brand-influencer-channel-map', methods=['POST'])
@@ -792,7 +813,7 @@ def get_brand_influencer_channel_map_by_influencer():
     mappings = BrandInfluencerChannelMapModel.query.filter_by(influencer_email=influencer_email)
 
     # if mapping exists, return success, else return false
-    if mappings[0]:
+    if mappings:
         response_object = {
             'status': 'success',
             'message': 'Mapping exists.',
