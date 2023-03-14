@@ -829,6 +829,56 @@ def get_brand_influencer_channel_map_by_influencer():
         }
         return jsonify(response_object), 401
 
+
+# get invites by influencer email
+@app.route('/influencer-invites', methods=['GET'])
+def get_influencer_invites():
+    email = request.args.get('email')
+    print(email)
+
+    # check if mapping exists
+    mappings = BrandInfluencerChannelMapModel.serialize_all(BrandInfluencerChannelMapModel.query.filter_by(influencer_email=email))
+
+    print("mappings", mappings)
+
+    # if mapping exists, return success, else return false
+    if mappings:
+        invites = []
+        for mapping in mappings:
+            brand = BrandUserProfileModel.query.filter_by(email=mapping["brand_email"]).first()
+            invite = {
+                'brandName': brand.company_name,
+                'brandEmail': brand.email,
+                'channelId': mapping["channel_id"],
+                'contactName': brand.first_name + " " + brand.last_name,
+                "companyDescription": brand.company_description,
+                "companyWebsite": brand.company_website,
+                "companyLogo": brand.company_logo,
+                "companyAddress": brand.company_address,
+            }
+
+            invites.append(invite)
+
+        print("invites", invites)
+
+        response_object = {
+            'status': 'success',
+            'message': 'Mapping exists.',
+            'body': {
+                'invites': invites
+            }
+        }
+
+        return jsonify(response_object), 201
+    
+    else:
+        response_object = {
+            'status': 'fail',
+            'message': 'Mapping does not exist.'
+        }
+        return jsonify(response_object), 404
+
+
 # get brandinfluencerchannelmaps by brand email
 @app.route('/brand-influencer-channel-map-by-brand', methods=['GET'])
 def get_brand_influencer_channel_map_by_brand():
