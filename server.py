@@ -853,6 +853,7 @@ def get_influencer_invites():
             invite = {
                 'brandName': brand.company_name,
                 'brandEmail': brand.email,
+                'bookCallInfo': brand.book_call_info,
                 'channelId': mapping["channel_id"],
                 'contactName': brand.first_name + " " + brand.last_name,
                 "companyDescription": brand.company_description,
