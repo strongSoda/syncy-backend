@@ -191,6 +191,7 @@ class BrandUserProfileModel(Base):
     company_instagram = db.Column(db.String(200))
     company_linkedin = db.Column(db.String(200))
     company_logo = db.Column(db.String(200))
+    book_call_info = db.Column(db.String(200))
 
     def __repr__(self):
         return '<id {}>'.format(self.id)
@@ -403,6 +404,7 @@ def create_brand_user_profile():
     company_email = request.json['companyEmail']
     job_title = request.json['jobTitle']
     company_description = request.json['companyDescription']
+    book_call_info = request.json['bookCallInfo']
 
     # check if user exists
 
@@ -421,6 +423,7 @@ def create_brand_user_profile():
         user.company_linkedin = company_linkedin
         user.company_email = company_email
         user.company_description = company_description
+        user.book_call_info = book_call_info
 
         # save user
         db.session.add(user)
@@ -446,7 +449,8 @@ def create_brand_user_profile():
             company_instagram=company_instagram,
             company_linkedin=company_linkedin,
             company_email=company_email,
-            company_description=company_description
+            company_description=company_description,
+            book_call_info=book_call_info
         )
 
         # save user
