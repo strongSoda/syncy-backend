@@ -310,16 +310,22 @@ class CampaignsModel(Base):
     type = db.Column(db.String(100))
     logo = db.Column(db.String(100))
 
-    def __init__(self, name, description, status, email, type, logo):
-        self.name = name
-        self.description = description
-        self.status = status
-        self.email = email
-        self.type = type
-        self.logo = logo
+    def __repr__(self):
+        return '<id {}>'.format(self.id)
+
+# campaign proposal model with campaign id, influencer email, status, price, description
+class CampaignProposalModel(Base):
+    __tablename__ = 'campaign_proposal'
+
+    campaign_id = db.Column(db.Integer, nullable=False)
+    influencer_email = db.Column(db.String(200), nullable=False)
+    status = db.Column(db.String(100))
+    price = db.Column(db.Integer)
+    description = db.Column(db.String(200))
 
     def __repr__(self):
         return '<id {}>'.format(self.id)
+
 
 # company and user map model with user id and company id
 class CompanyUserMapModel(Base):
@@ -976,6 +982,58 @@ def create_campaign():
         }
         return jsonify(response_object), 401
     
+# get all campaigns
+@app.route('/admin/campaigns', methods=['GET'])
+def get_campaigns():
+    campaigns = CampaignsModel.query.all()
+
+    if campaigns:
+        response_object = {
+            'status': 'success',
+            'message': 'Successfully created.',
+            'body': {
+                'campaigns': CampaignsModel.serialize_all(campaigns)
+            }
+        }
+        return jsonify(response_object), 201
+    else:
+        response_object = {
+            'status': 'fail',
+            'message': 'Some error occurred. Please try again.'
+        }
+        return jsonify(response_object), 401
+
+
+# create proposal for campaign
+@app.route('/campaign/apply', methods=['GET'])
+def apply_campaign():
+    campaign_id = request.args.get('campaignId')
+    influencer_email = request.args.get('email')
+
+    try:
+        proposal = CampaignProposalModel(
+            campaign_id=campaign_id,
+            influencer_email=influencer_email,
+            status="pending"
+        )
+
+        db.session.add(proposal)
+        db.session.commit()
+        
+        response_object = {
+            'status': 'success',
+            'message': 'Successfully Applied.'
+        }
+        return jsonify(response_object), 201
+    except Exception as e:
+        print(e)
+        response_object = {
+            'status': 'fail',
+            'message': 'Some error occurred. Please try again.'
+        }
+        return jsonify(response_object), 401
+
+
 
 # create stream chat token
 @app.route('/stream-chat-token', methods=['GET'])
