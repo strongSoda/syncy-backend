@@ -298,6 +298,28 @@ class CompanyModel(Base):
 
     def __repr__(self):
         return '<id {}>'.format(self.id)
+    
+# campaigns model with name, description, status, email, type, logo
+class CampaignsModel(Base):
+    __tablename__ = 'campaigns'
+
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.String(200))
+    status = db.Column(db.String(100))
+    email = db.Column(db.String(100))
+    type = db.Column(db.String(100))
+    logo = db.Column(db.String(100))
+
+    def __init__(self, name, description, status, email, type, logo):
+        self.name = name
+        self.description = description
+        self.status = status
+        self.email = email
+        self.type = type
+        self.logo = logo
+
+    def __repr__(self):
+        return '<id {}>'.format(self.id)
 
 # company and user map model with user id and company id
 class CompanyUserMapModel(Base):
@@ -911,6 +933,49 @@ def get_brand_influencer_channel_map_by_brand():
             'message': 'Mapping does not exist.'
         }
         return jsonify(response_object), 401
+
+
+# create new campaign
+@app.route('/admin/campaign', methods=['POST'])
+def create_campaign():
+    post_data = request.get_json()
+
+    name = post_data.get('campaignName')
+    email = post_data.get('campaignEmail')
+    description = post_data.get('campaignDescription')
+    status = post_data.get('campaignStatus')
+    type = post_data.get('campaignType')
+    logo = post_data.get('campaignLogo')
+
+    print(name, email, description, status, type, logo)
+
+    try:
+        campaign = CampaignsModel(
+            name=name,
+            email=email,
+            description=description,
+            status=status,
+            type=type,
+            logo=logo
+        )
+
+        db.session.add(campaign)
+        db.session.commit()
+        
+        response_object = {
+            'status': 'success',
+            'message': 'Successfully created.'
+        }
+        return jsonify(response_object), 201
+    
+    except Exception as e:
+        print(e)
+        response_object = {
+            'status': 'fail',
+            'message': 'Some error occurred. Please try again.'
+        }
+        return jsonify(response_object), 401
+    
 
 # create stream chat token
 @app.route('/stream-chat-token', methods=['GET'])
