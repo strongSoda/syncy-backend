@@ -204,7 +204,7 @@ class InfluencerProfileModel(Base):
     email = db.Column(db.String(200), nullable=False)
     first_name = db.Column(db.String(200))
     last_name = db.Column(db.String(200))
-    bio = db.Column(db.String(200))
+    bio = db.Column(db.String(500))
     city = db.Column(db.String(200))
     image_url = db.Column(db.String(200))
     calender_url = db.Column(db.String(200))
@@ -304,7 +304,7 @@ class CampaignsModel(Base):
     __tablename__ = 'campaigns'
 
     name = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.String(200))
+    description = db.Column(db.String(500))
     status = db.Column(db.String(100))
     email = db.Column(db.String(100))
     type = db.Column(db.String(100))
