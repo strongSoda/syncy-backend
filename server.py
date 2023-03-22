@@ -535,36 +535,44 @@ def create_influencer_profile_personal():
     
     # if user exists, update user, else create user
     if user:
-        user.first_name = first_name
-        user.last_name = last_name
-        user.image_url = image_url
-        user.city = city
-        user.bio = bio
-        user.calender_url = calender_url
+        try:
+            user.first_name = first_name
+            user.last_name = last_name
+            user.image_url = image_url
+            user.city = city
+            user.bio = bio
+            user.calender_url = calender_url
 
-        # save user
-        db.session.add(user)
-        db.session.commit()
+            # save user
+            db.session.add(user)
+            db.session.commit()
 
-        # save to algolia index "influencers"
-        index = client.init_index('influencers')
-        index.partial_update_object({
-            'objectID': user.id,
-            'email': user.email,
-            'firstName': user.first_name,
-            'lastName': user.last_name,
-            'fullName': user.first_name + ' ' + user.last_name,
-            'imageUrl': user.image_url,
-            'city': user.city,
-            'bio': user.bio,
-            'bookCallInfo': user.calender_url,
-        })
+            # save to algolia index "influencers"
+            index = client.init_index('influencers')
+            index.partial_update_object({
+                'objectID': user.id,
+                'email': user.email,
+                'firstName': user.first_name,
+                'lastName': user.last_name,
+                'fullName': user.first_name + ' ' + user.last_name,
+                'imageUrl': user.image_url,
+                'city': user.city,
+                'bio': user.bio,
+                'bookCallInfo': user.calender_url,
+            })
 
-        response_object = {
-            'status': 'success',
-            'message': 'Successfully updated.'
-        }
-        return jsonify(response_object), 201
+            response_object = {
+                'status': 'success',
+                'message': 'Successfully updated.'
+            }
+            return jsonify(response_object), 201
+        except Exception as e:
+            print(e)
+            response_object = {
+                'status': 'fail',
+                'message': e.message
+            }
+            return jsonify(response_object), 401
     
     else:
         try:
@@ -609,7 +617,7 @@ def create_influencer_profile_personal():
             print(e)
             response_object = {
                 'status': 'fail',
-                'message': 'Some error occurred. Please try again.'
+                'message': e.message
             }
             return jsonify(response_object), 401
 
