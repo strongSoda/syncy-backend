@@ -434,62 +434,76 @@ def create_brand_user_profile():
     company_description = request.json['companyDescription']
     book_call_info = request.json['bookCallInfo']
 
+    print(email, first_name, last_name, company_name, company_website, company_logo, company_address, company_instagram, company_linkedin, company_email, job_title, company_description, book_call_info)
     # check if user exists
 
     user = BrandUserProfileModel.query.filter_by(email=email).first()
     
-    # if user exists, update user, else create user
-    if user:
-        user.first_name = first_name
-        user.last_name = last_name
-        user.job_title = job_title
-        user.company_name = company_name
-        user.company_website = company_website
-        user.company_logo = company_logo
-        user.company_address = company_address
-        user.company_instagram = company_instagram
-        user.company_linkedin = company_linkedin
-        user.company_email = company_email
-        user.company_description = company_description
-        user.book_call_info = book_call_info
+    print(user)
 
-        # save user
-        db.session.add(user)
-        db.session.commit()
+    try:
 
-        response_object = {
-            'status': 'success',
-            'message': 'Successfully updated.'
-        }
-        return jsonify(response_object), 201
+        # if user exists, update user, else create user
+        if user:
+            user.first_name = first_name
+            user.last_name = last_name
+            user.job_title = job_title
+            user.company_name = company_name
+            user.company_website = company_website
+            user.company_logo = company_logo
+            user.company_address = company_address
+            user.company_instagram = company_instagram
+            user.company_linkedin = company_linkedin
+            user.company_email = company_email
+            user.company_description = company_description
+            user.book_call_info = book_call_info
+
+            # save user
+            db.session.add(user)
+            db.session.commit()
+
+            response_object = {
+                'status': 'success',
+                'message': 'Successfully updated.'
+            }
+            return jsonify(response_object), 201
+            
+        else:
+            # create new user
+            new_user = BrandUserProfileModel(
+                email=email,
+                first_name=first_name,
+                last_name=last_name,
+                job_title=job_title,
+                company_name=company_name,
+                company_website=company_website,
+                company_logo=company_logo,
+                company_address=company_address,
+                company_instagram=company_instagram,
+                company_linkedin=company_linkedin,
+                company_email=company_email,
+                company_description=company_description,
+                book_call_info=book_call_info
+            )
+
+            # save user
+            db.session.add(new_user)
+            db.session.commit()
+
+            response_object = {
+                'status': 'success',
+                'message': 'Successfully registered.'
+            }
+            return jsonify(response_object), 201
         
-    else:
-        # create new user
-        new_user = BrandUserProfileModel(
-            email=email,
-            first_name=first_name,
-            last_name=last_name,
-            job_title=job_title,
-            company_name=company_name,
-            company_website=company_website,
-            company_logo=company_logo,
-            company_address=company_address,
-            company_instagram=company_instagram,
-            company_linkedin=company_linkedin,
-            company_email=company_email,
-            company_description=company_description,
-            book_call_info=book_call_info
-        )
-
-        # save user
-        db.session.add(new_user)
-        db.session.commit()
-
+    except Exception as e:
+        print(e)
         response_object = {
-            'status': 'success',
-            'message': 'Successfully registered.'
+            'status': 'fail',
+            'message': e.message
         }
-        return jsonify(response_object), 201
+        return jsonify(response_object), 501
+
 
 # get brand user profile
 @app.route('/brand_user_profile', methods=['GET'])
