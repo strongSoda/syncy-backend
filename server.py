@@ -1064,7 +1064,7 @@ def get_stream_chat_token():
     # pip install stream-chat
     import stream_chat
 
-    server_client = stream_chat.StreamChat(api_key="f2hpu5up29pk", api_secret="wvkczyfdngnq4cx6x3pg5gp6t6u687z4zavsdpfgjkyfqt2n29wv7fagvrueemv7")
+    server_client = stream_chat.StreamChat(api_key="6nrdgtzxm932", api_secret="s8zjf6hfvhsp6wgbeuusmm6uy4rn9vgkjjg2ryqe48fzhc3r2u3u9zf7nzm8uj9h")
     token = server_client.create_token(uid)
     print(token)
 
@@ -1094,7 +1094,7 @@ def update_stream_chat_channel_members():
     try:
         import stream_chat
         
-        server_client = stream_chat.StreamChat(api_key="f2hpu5up29pk", api_secret="wvkczyfdngnq4cx6x3pg5gp6t6u687z4zavsdpfgjkyfqt2n29wv7fagvrueemv7")
+        server_client = stream_chat.StreamChat(api_key="6nrdgtzxm932", api_secret="s8zjf6hfvhsp6wgbeuusmm6uy4rn9vgkjjg2ryqe48fzhc3r2u3u9zf7nzm8uj9h")
         channel = server_client.channel('messaging', channel_id)
 
         print('channel', channel)
@@ -1124,7 +1124,7 @@ def create_stream_chat_channel():
     image_url = request.args.get('imageUrl')
     
     import stream_chat
-    server_client = stream_chat.StreamChat(api_key="f2hpu5up29pk", api_secret="wvkczyfdngnq4cx6x3pg5gp6t6u687z4zavsdpfgjkyfqt2n29wv7fagvrueemv7")
+    server_client = stream_chat.StreamChat(api_key="6nrdgtzxm932", api_secret="s8zjf6hfvhsp6wgbeuusmm6uy4rn9vgkjjg2ryqe48fzhc3r2u3u9zf7nzm8uj9h")
 
     print(channel_id, channel_name, user_id, image_url)
 
@@ -1154,7 +1154,7 @@ def send_stream_chat_message():
 
     # pip install stream-chat
     import stream_chat
-    server_client = stream_chat.StreamChat(api_key="f2hpu5up29pk", api_secret="wvkczyfdngnq4cx6x3pg5gp6t6u687z4zavsdpfgjkyfqt2n29wv7fagvrueemv7")
+    server_client = stream_chat.StreamChat(api_key="6nrdgtzxm932", api_secret="s8zjf6hfvhsp6wgbeuusmm6uy4rn9vgkjjg2ryqe48fzhc3r2u3u9zf7nzm8uj9h")
     channel = server_client.channel('messaging', channel_id)
 
     try:
