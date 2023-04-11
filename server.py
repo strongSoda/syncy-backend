@@ -341,6 +341,28 @@ class CompanyUserMapModel(Base):
     def __repr__(self):
         return '<id {}>'.format(self.id)
 
+class ContentPacksModel(Base):
+    __tablename__ = 'contentpacks'
+
+    title = db.Column(db.String(300))
+    description = db.Column(db.String(1000))
+    price = db.Column(db.Integer)
+    platform = db.Column(db.String(300))
+    examples = db.Column(db.String(10000))
+
+    def __repr__(self):
+        return '<contentpack id {}>'.format(self.id)
+
+class ContentPacksUserMapModel(Base):
+    __tablename__ = 'contentpacks_user_map'
+
+    user_email = db.Column(db.String, nullable=False)
+    contentpack_id = db.Column(db.Integer, nullable=False)
+
+    def __repr__(self):
+        return '<id {}>'.format(self.id)
+
+
 """routes"""
 
 """home route"""
@@ -1055,6 +1077,173 @@ def apply_campaign():
         }
         return jsonify(response_object), 401
 
+# create new content pack for ContentPacksModel
+@app.route('/content-pack/<user_email>', methods=['POST'])
+def create_content_pack(user_email):
+    post_data = request.get_json()
+
+    title = post_data.get('title')
+    description = post_data.get('description')
+    platform = post_data.get('platform')
+    price = post_data.get('price')
+    examples = post_data.get('examples')
+
+    print(title, description, platform, price, examples)
+
+    try:
+        content_pack = ContentPacksModel(
+            title=title,
+            description=description,
+            platform=platform,
+            price=price,
+            examples=examples
+        )
+
+        db.session.add(content_pack)
+        db.session.commit()
+
+        # create content packs user mapping
+        content_pack_user_mapping = ContentPacksUserMapModel(
+            contentpack_id=content_pack.id,
+            user_email = user_email
+        )
+
+        db.session.add(content_pack_user_mapping)
+        db.session.commit()
+        
+        response_object = {
+            'status': 'success',
+            'message': 'Successfully created.',
+            'body': {
+                'content_pack': ContentPacksModel.serialize(content_pack)
+            }
+        }
+        return jsonify(response_object), 201
+    
+    except Exception as e:
+        print(e)
+        response_object = {
+            'status': 'fail',
+            'message': 'Some error occurred. Please try again.'
+        }
+        return jsonify(response_object), 500
+
+# edit content pack for ContentPacksModel
+@app.route('/content-pack/<user_email>/<content_pack_id>', methods=['PUT'])
+def edit_content_pack(user_email, content_pack_id):
+    post_data = request.get_json()
+
+    title = post_data.get('title')
+    description = post_data.get('description')
+    platform = post_data.get('platform')
+    price = post_data.get('price')
+    examples = post_data.get('examples')
+
+    print(title, description, platform, price, examples)
+
+    try:
+        content_pack = ContentPacksModel.query.filter_by(id=content_pack_id).first()
+
+        content_pack.title = title
+        content_pack.description = description
+        content_pack.platform = platform
+        content_pack.price = price
+        content_pack.examples = examples
+
+        db.session.commit()
+        
+        response_object = {
+            'status': 'success',
+            'message': 'Successfully updated.',
+            'body': {
+                'content_pack': ContentPacksModel.serialize(content_pack)
+            }
+        }
+        return jsonify(response_object), 201
+    
+    except Exception as e:
+        print(e)
+        response_object = {
+            'status': 'fail',
+            'message': 'Some error occurred. Please try again.'
+        }
+        return jsonify(response_object), 500
+
+# delete content pack for ContentPacksModel
+@app.route('/content-pack/<user_email>/<content_pack_id>', methods=['DELETE'])
+def delete_content_pack(user_email, content_pack_id):
+    try:
+        content_pack = ContentPacksModel.query.filter_by(id=content_pack_id).first()
+
+        db.session.delete(content_pack)
+        db.session.commit()
+        
+        response_object = {
+            'status': 'success',
+            'message': 'Successfully deleted.'
+        }
+        return jsonify(response_object), 201
+    
+    except Exception as e:
+        print(e)
+        response_object = {
+            'status': 'fail',
+            'message': 'Some error occurred. Please try again.'
+        }
+        return jsonify(response_object), 500
+
+# get all content packs for an influencer
+@app.route('/content-packs/<user_email>', methods=['GET'])
+def get_content_packs(user_email):
+    content_packs_list = ContentPacksUserMapModel.query.filter_by(user_email=user_email).all()
+
+    print('content_packs_list', content_packs_list)
+
+    content_packs = []
+    
+    if(len(content_packs_list) == 0):
+        response_object = {
+            'status': 'success',
+            'message': 'No content packs yet.',
+            'body': {
+                'content_packs': [],
+                'length': 0
+            }
+        }
+        return jsonify(response_object), 201
+
+    for c in content_packs_list:
+        content_pack = ContentPacksModel.query.filter_by(id=c.contentpack_id).first()
+        content_packs.append(content_pack)
+    
+    print('content_packs', content_packs)
+
+    # print('kk', ContentPacksModel.serialize_all(content_packs))
+    
+    if content_packs:
+        try:
+            response_object = {
+                'status': 'success',
+                'message': 'Successfully fetched.',
+                'body': {
+                    'content_packs': ContentPacksModel.serialize_all(content_packs),
+                    'length': len(content_packs)
+                }
+            }
+            return jsonify(response_object), 201
+        except Exception as e:
+            print(e)
+            response_object = {
+                'status': 'fail',
+                'message': 'Some error occurred. Please try again.'
+            }
+            return jsonify(response_object), 500
+    else:
+        response_object = {
+            'status': 'fail',
+            'message': 'Some error occurred. Please try again.',
+        }
+        return jsonify(response_object), 401
 
 
 # create stream chat token
@@ -1064,7 +1253,7 @@ def get_stream_chat_token():
     # pip install stream-chat
     import stream_chat
 
-    server_client = stream_chat.StreamChat(api_key="f2hpu5up29pk", api_secret="wvkczyfdngnq4cx6x3pg5gp6t6u687z4zavsdpfgjkyfqt2n29wv7fagvrueemv7")
+    server_client = stream_chat.StreamChat(api_key="6nrdgtzxm932", api_secret="s8zjf6hfvhsp6wgbeuusmm6uy4rn9vgkjjg2ryqe48fzhc3r2u3u9zf7nzm8uj9h")
     token = server_client.create_token(uid)
     print(token)
 
@@ -1094,7 +1283,7 @@ def update_stream_chat_channel_members():
     try:
         import stream_chat
         
-        server_client = stream_chat.StreamChat(api_key="f2hpu5up29pk", api_secret="wvkczyfdngnq4cx6x3pg5gp6t6u687z4zavsdpfgjkyfqt2n29wv7fagvrueemv7")
+        server_client = stream_chat.StreamChat(api_key="6nrdgtzxm932", api_secret="s8zjf6hfvhsp6wgbeuusmm6uy4rn9vgkjjg2ryqe48fzhc3r2u3u9zf7nzm8uj9h")
         channel = server_client.channel('messaging', channel_id)
 
         print('channel', channel)
@@ -1124,7 +1313,7 @@ def create_stream_chat_channel():
     image_url = request.args.get('imageUrl')
     
     import stream_chat
-    server_client = stream_chat.StreamChat(api_key="f2hpu5up29pk", api_secret="wvkczyfdngnq4cx6x3pg5gp6t6u687z4zavsdpfgjkyfqt2n29wv7fagvrueemv7")
+    server_client = stream_chat.StreamChat(api_key="6nrdgtzxm932", api_secret="s8zjf6hfvhsp6wgbeuusmm6uy4rn9vgkjjg2ryqe48fzhc3r2u3u9zf7nzm8uj9h")
 
     print(channel_id, channel_name, user_id, image_url)
 
@@ -1154,7 +1343,7 @@ def send_stream_chat_message():
 
     # pip install stream-chat
     import stream_chat
-    server_client = stream_chat.StreamChat(api_key="f2hpu5up29pk", api_secret="wvkczyfdngnq4cx6x3pg5gp6t6u687z4zavsdpfgjkyfqt2n29wv7fagvrueemv7")
+    server_client = stream_chat.StreamChat(api_key="6nrdgtzxm932", api_secret="s8zjf6hfvhsp6wgbeuusmm6uy4rn9vgkjjg2ryqe48fzhc3r2u3u9zf7nzm8uj9h")
     channel = server_client.channel('messaging', channel_id)
 
     try:
