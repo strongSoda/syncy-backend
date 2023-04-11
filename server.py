@@ -33,10 +33,10 @@ bcrypt = Bcrypt(app)
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {"pool_pre_ping": True}  
 
 # prod
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgres://admin:ISXCZMs8jsMbIueadzQzXqIiW2Jtxb1y@dpg-cc6886da49936rkaijgg-a.oregon-postgres.render.com/syncy'
+# app.config['SQLALCHEMY_DATABASE_URI'] = 'postgres://admin:ISXCZMs8jsMbIueadzQzXqIiW2Jtxb1y@dpg-cc6886da49936rkaijgg-a.oregon-postgres.render.com/syncy'
 
 # local
-# app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql:///syncy'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql:///syncy'
 
 # dynamic
 # app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URI")
@@ -1174,8 +1174,13 @@ def edit_content_pack(user_email, content_pack_id):
 def delete_content_pack(user_email, content_pack_id):
     try:
         content_pack = ContentPacksModel.query.filter_by(id=content_pack_id).first()
-
+        
         db.session.delete(content_pack)
+        db.session.commit()
+        
+        content_pack_user_map = ContentPacksUserMapModel.query.filter_by(contentpack_id=content_pack_id).first()
+
+        db.session.delete(content_pack_user_map)
         db.session.commit()
         
         response_object = {
