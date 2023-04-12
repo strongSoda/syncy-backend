@@ -349,6 +349,7 @@ class ContentPacksModel(Base):
     price = db.Column(db.Integer)
     platform = db.Column(db.String(300))
     examples = db.Column(db.String(10000))
+    delivery = db.Column(db.Integer)
 
     def __repr__(self):
         return '<contentpack id {}>'.format(self.id)
@@ -1087,8 +1088,9 @@ def create_content_pack(user_email):
     platform = post_data.get('platform')
     price = post_data.get('price')
     examples = post_data.get('examples')
+    delivery = post_data.get('delivery')
 
-    print(title, description, platform, price, examples)
+    print(title, description, platform, price, examples, delivery)
 
     try:
         content_pack = ContentPacksModel(
@@ -1096,7 +1098,8 @@ def create_content_pack(user_email):
             description=description,
             platform=platform,
             price=price,
-            examples=examples
+            examples=examples,
+            delivery=delivery
         )
 
         db.session.add(content_pack)
@@ -1138,8 +1141,9 @@ def edit_content_pack(user_email, content_pack_id):
     platform = post_data.get('platform')
     price = post_data.get('price')
     examples = post_data.get('examples')
+    delivery = post_data.get('delivery')
 
-    print(title, description, platform, price, examples)
+    print(title, description, platform, price, examples, delivery)
 
     try:
         content_pack = ContentPacksModel.query.filter_by(id=content_pack_id).first()
@@ -1149,6 +1153,7 @@ def edit_content_pack(user_email, content_pack_id):
         content_pack.platform = platform
         content_pack.price = price
         content_pack.examples = examples
+        content_pack.delivery = delivery
 
         db.session.commit()
         
