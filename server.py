@@ -44,10 +44,10 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'postgres://admin:ISXCZMs8jsMbIueadzQzXq
 print('################################', os.environ.get("DATABASE_URI"), os.environ.get("STRIPE_LIVE_SECRET_KEY"))
 import stripe
 # This is your test secret API key.
-# stripe.api_key = 'sk_test_51JMNGMBC2Ls8FQJScwZbebJ4QxAU4XIEpf7tHIQ6b2gOJ8piskUX5WAWi6TfKrMiTmv6pHuJr1rFQsgwdPeEmHjo00h9RzLUTz'
+stripe.api_key = 'sk_test_51JMNGMBC2Ls8FQJScwZbebJ4QxAU4XIEpf7tHIQ6b2gOJ8piskUX5WAWi6TfKrMiTmv6pHuJr1rFQsgwdPeEmHjo00h9RzLUTz'
 
 # This is your live secret API key.
-stripe.api_key = os.environ.get("STRIPE_LIVE_SECRET_KEY")
+# stripe.api_key = os.environ.get("STRIPE_LIVE_SECRET_KEY")
 
 db = SQLAlchemy(app)
 migrate = Migrate(app, db, compare_type=True)
@@ -1325,10 +1325,11 @@ def book_pack_success():
 
     if booking:
         try:
-            booking.status = CONTENT_PACK_BOOKING_STATUS['BOOKED']
-            db.session.commit()
+            booking.status = CONTENT_PACK_BOOKING_STATUS.BOOKED
+            booking.save()
+            print('book pack status', booking.status)
         except Exception as e:
-            print(e)
+            print('error', str(e))
     else:
         print('booking not found')
 
@@ -1566,16 +1567,16 @@ def create_checkout_session():
                             "metadata": {
                                 "bookingId": booking_id,
                                 "contentPackId": contentPack['id'],
-                                "influencer": influencer['fullName'],
+                                "influencer": str(influencer)[:400],
                                 "platform": contentPack['platform'],
                                 "delivery": contentPack['delivery'],
                                 "name": user.first_name + ' ' + user.last_name,
                                 "email" : user.email,
                                 "company": user.company_name,
                                 # truncate details to 400 characters
-                                "details": details[:400],
-                                "contentScript": contentScript[:400],
-                                "copy": copy[:400],
+                                "details": str(details[:400]),
+                                "contentScript": str(contentScript[:400]),
+                                "copy": str(copy[:400]),
                             },
                         },
                     },
@@ -1584,7 +1585,7 @@ def create_checkout_session():
             ],
             mode='payment',
             allow_promotion_codes=True,
-            success_url='http://localhost:5500/book-pack-success?booking_id=' + booking_id,
+            success_url='http://localhost:8000/book-pack-success?booking_id=' + booking_id,
             cancel_url='https://app.syncy.net/brand/discover',
         )
         
