@@ -1279,12 +1279,13 @@ def get_content_packs(user_email):
 # /book-content-pack/${contentPack?.id}
 @app.route('/book-content-pack/<contentpack_id>', methods=['POST'])
 def book_content_pack(contentpack_id):
-    user_email = request.args.get('userEmail')
-    details = request.args.get('details')
-    content_script = request.args.get('contentScript')
-    copy = request.args.get('copy')
+    post_data = request.get_json()
+    user_email = post_data.get('userEmail')
+    details = post_data.get('details')
+    content_script = post_data.get('contentScript')
+    copy = post_data.get('copy')
 
-    print('user_email', user_email, 'details', details, 'content_script', content_script, 'copy', copy)
+    print('contentpack_id', contentpack_id, 'user_email', user_email, 'details', details, 'content_script', content_script, 'copy', copy)
 
     try:
         new_booking = ContentPackBookingsModel(
@@ -1305,6 +1306,7 @@ def book_content_pack(contentpack_id):
                 'booking': ContentPackBookingsModel.serialize(new_booking)
             }
         }
+        return jsonify(response_object), 201
     except Exception as e:
         print(e)
         response_object = {
@@ -1541,7 +1543,8 @@ def create_checkout_session():
     details = post_data.get('details')
     contentScript = post_data.get('contentScript')
     copy = post_data.get('copy')
-    price = int(contentPack['price']) if contentPack['price'] else 0
+    price = post_data.get('price')
+    price = int(price) if price else 0
 
     # get user from the database by user id
     user = BrandUserProfileModel.query.filter_by(email=user_email).first()
@@ -1557,13 +1560,13 @@ def create_checkout_session():
                         'currency': 'usd',
                         'unit_amount': price*100 if price else 5000,
                         'product_data': {
-                            'title': contentPack['title'] + ' by ' + influencer['name'],
+                            'name': contentPack['title'] + ' by ' + influencer['fullName'],
                             "description": contentPack['description'],
-                            "images": [influencer['image_url']],
+                            "images": [influencer['imageUrl']],
                             "metadata": {
                                 "bookingId": booking_id,
                                 "contentPackId": contentPack['id'],
-                                "influencer": influencer['name'],
+                                "influencer": influencer['fullName'],
                                 "platform": contentPack['platform'],
                                 "delivery": contentPack['delivery'],
                                 "name": user.first_name + ' ' + user.last_name,
@@ -1584,7 +1587,8 @@ def create_checkout_session():
             success_url='http://localhost:5500/book-pack-success?booking_id=' + booking_id,
             cancel_url='https://app.syncy.net/brand/discover',
         )
-        # print(checkout_session)
+        
+        print('checkout_session', checkout_session)
         responseObject = {
             'status': 'success',
             'body': {
@@ -1593,7 +1597,7 @@ def create_checkout_session():
         }
         return make_response(jsonify(responseObject)), 200
     except Exception as e:
-        print('e', str(e))
+        print('error', str(e))
         return str(e)
 
 # api to render a page that calls /all_target_user_profiles and converts json to csv and downloads
