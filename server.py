@@ -57,6 +57,15 @@ from algoliasearch.search_client import SearchClient
 client = SearchClient.create('L7PFECEWC3', 'e03caa75dd335df7a8fefb1f0e3b6e27')
 # index = client.init_index('syncy')
 
+class CONTENT_PACK_BOOKING_STATUS:
+    PENDING = 'PENDING',
+    BOOKED = 'BOOKED',
+    ACCEPTED = 'ACCEPTED',
+    REJECTED = 'REJECTED',
+    SUBMITTED = 'SUBMITTED',
+    CANCELLED = 'CANCELLED',
+    COMPLETED = 'COMPLETED'
+
 
 YOUR_DOMAIN = 'https://syncy.net'
 
@@ -363,6 +372,18 @@ class ContentPacksUserMapModel(Base):
     def __repr__(self):
         return '<id {}>'.format(self.id)
 
+class ContentPackBookingsModel(Base):
+    __tablename__ = 'contentpack_bookings'
+
+    user_email = db.Column(db.String, nullable=False)
+    contentpack_id = db.Column(db.Integer, nullable=False)
+    status = db.Column(db.String, default=CONTENT_PACK_BOOKING_STATUS.PENDING)
+    details = db.Column(db.String(20000))
+    copy = db.Column(db.String(20000))
+    script = db.Column(db.String(20000))
+
+    def __repr__(self):
+        return '<id {}>'.format(self.id)
 
 """routes"""
 
@@ -1255,6 +1276,139 @@ def get_content_packs(user_email):
         }
         return jsonify(response_object), 401
 
+# /book-content-pack/${contentPack?.id}
+@app.route('/book-content-pack/<contentpack_id>', methods=['POST'])
+def book_content_pack(contentpack_id):
+    user_email = request.args.get('userEmail')
+    details = request.args.get('details')
+    content_script = request.args.get('contentScript')
+    copy = request.args.get('copy')
+
+    print('user_email', user_email, 'details', details, 'content_script', content_script, 'copy', copy)
+
+    try:
+        new_booking = ContentPackBookingsModel(
+            user_email=user_email,
+            contentpack_id=contentpack_id,
+            details=details,
+            script=content_script,
+            copy=copy
+        )
+
+        db.session.add(new_booking)
+        db.session.commit()
+
+        response_object = {
+            'status': 'success',
+            'message': 'Booking successfully saved.',
+            'body': {
+                'booking': ContentPackBookingsModel.serialize(new_booking)
+            }
+        }
+    except Exception as e:
+        print(e)
+        response_object = {
+            'status': 'fail',
+            'message': 'Some error occurred. Please try again.'
+        }
+        return jsonify(response_object), 500
+
+# book-pack-success?booking_id
+@app.route('/book-pack-success', methods=['GET'])
+def book_pack_success():
+    booking_id = request.args.get('booking_id')
+    booking = ContentPackBookingsModel.query.filter_by(id=booking_id).first()
+
+    print('booking', booking)
+
+    if booking:
+        try:
+            booking.status = CONTENT_PACK_BOOKING_STATUS['BOOKED']
+            db.session.commit()
+        except Exception as e:
+            print(e)
+    else:
+        print('booking not found')
+
+    return redirect('http://localhost:3000/brand/booking/' + booking_id)
+
+# get booking by id
+@app.route('/booking/<booking_id>', methods=['GET'])
+def get_booking(booking_id):
+    booking = ContentPackBookingsModel.query.filter_by(id=booking_id).first()
+
+    print('booking', booking)
+
+    if booking:
+        try:
+            influencer_email = ContentPacksUserMapModel.query.filter_by(contentpack_id=booking.contentpack_id).first().user_email
+            influencer = InfluencerProfileModel.query.filter_by(email=influencer_email).first()
+            response_object = {
+                'status': 'success',
+                'message': 'Successfully fetched.',
+                'body': {
+                    'booking': {
+                        'id': booking.id,
+                        'status': booking.status,
+                        'user': BrandUserProfileModel.serialize(BrandUserProfileModel.query.filter_by(email=b.user_email).first()),
+                        'contentpack': ContentPacksModel.serialize(ContentPacksModel.query.filter_by(id=b.contentpack_id).first()),
+                        'influencer': InfluencerProfileModel.serialize(influencer),
+                        'details': booking.details,
+                        'contentScript': booking.content_script,
+                        'copy': booking.copy,
+                        }
+                }
+            }
+            return jsonify(response_object), 201
+        except Exception as e:
+            print(e)
+            response_object = {
+                'status': 'fail',
+                'message': 'Some error occurred. Please try again.'
+            }
+            return jsonify(response_object), 500
+    else:
+        response_object = {
+            'status': 'fail',
+            'message': f'''No booing with id {booking_id} found.'''
+        }
+        return jsonify(response_object), 404
+
+# get all bookings of a user
+@app.route('/bookings/<user_email>', methods=['GET'])
+def get_bookings(user_email):
+    bookings_list = ContentPackBookingsModel.query.filter_by(user_email=user_email).all()
+
+    print('bookings_list', bookings_list)
+
+    bookings = []
+    
+
+    if(len(bookings_list) != 0):
+        for b in bookings_list:
+            influencer_email = ContentPacksUserMapModel.query.filter_by(contentpack_id=b.contentpack_id).first().user_email
+            influencer = InfluencerProfileModel.query.filter_by(email=influencer_email).first()
+            
+            booking = {
+                'id': b.id,
+                'contentPack': ContentPacksModel.serialize(ContentPacksModel.query.filter_by(id=b.contentpack_id).first()),
+                'status': b.status,
+                'influencer': InfluencerProfileModel.serialize(influencer),
+            }
+
+            bookings.append(booking)
+    
+    print('bookings', bookings)
+
+    response_object = {
+        'status': 'success',
+        'message': 'Successfully fetched.',
+        'body': {
+            'bookings': bookings,
+            'length': len(bookings)
+        }
+    }
+
 
 # create stream chat token
 @app.route('/stream-chat-token', methods=['GET'])
@@ -1380,22 +1534,17 @@ def create_checkout_session():
     print('create_checkout_session')
     # get the post data from the request
     post_data = request.get_json()
-    # get user id, name, profile_image, email, city, country, tags, bio, success_url, cancel_url, linkedin from the post data
-    user_id = post_data.get('user_id')
-    name = post_data.get('name')
-    profile_image_url = post_data.get('profile_image_url')
-    email = post_data.get('email')
-    city = post_data.get('city')
-    country = post_data.get('country')
-    tags = post_data.get('tags')
-    bio = post_data.get('bio')
-    linkedin_url = post_data.get('linkedin_url')
-    calendly_url = post_data.get('calendly_url')
-    rate = post_data.get('rate')
-    rate = int(rate) if rate else 0
+    booking_id = post_data.get('bookingId')
+    user_email = post_data.get('userEmail')
+    contentPack = post_data.get('contentPack')
+    influencer = post_data.get('influencer')
+    details = post_data.get('details')
+    contentScript = post_data.get('contentScript')
+    copy = post_data.get('copy')
+    price = int(contentPack['price']) if contentPack['price'] else 0
 
     # get user from the database by user id
-    user = TargetUserProfileModel.query.filter_by(id=user_id).first()
+    user = BrandUserProfileModel.query.filter_by(email=user_email).first()
     # print the post data
     print('post_data', post_data)
 
@@ -1406,20 +1555,24 @@ def create_checkout_session():
                     # Provide the exact Price ID (for example, pr_1234) of the product you want to sell
                     'price_data': {
                         'currency': 'usd',
-                        'unit_amount': rate*100 if rate and rate!=25 else 2500,
+                        'unit_amount': price*100 if price else 5000,
                         'product_data': {
-                            'name': 'Syncy 30 minute call with ' + name,
-                            "description": "Please complete payment in order to confirm your Sync. Send questions or feedback to help@syncy.net.",
-                            "images": [profile_image_url],
+                            'title': contentPack['title'] + ' by ' + influencer['name'],
+                            "description": contentPack['description'],
+                            "images": [influencer['image_url']],
                             "metadata": {
-                                "name": name,
-                                "email" : email,
-                                "linkedin": linkedin_url,
-                                # truncate bio to 400 characters
-                                "bio": bio[:400],
-                                "city": city,
-                                "country": country,
-                                "tags": tags,
+                                "bookingId": booking_id,
+                                "contentPackId": contentPack['id'],
+                                "influencer": influencer['name'],
+                                "platform": contentPack['platform'],
+                                "delivery": contentPack['delivery'],
+                                "name": user.first_name + ' ' + user.last_name,
+                                "email" : user.email,
+                                "company": user.company_name,
+                                # truncate details to 400 characters
+                                "details": details[:400],
+                                "contentScript": contentScript[:400],
+                                "copy": copy[:400],
                             },
                         },
                     },
@@ -1428,14 +1581,13 @@ def create_checkout_session():
             ],
             mode='payment',
             allow_promotion_codes=True,
-            # success_url='http://localhost:5500/book-call.html?id=' + user_id,
-            success_url=user.calendly_url,
-            cancel_url=YOUR_DOMAIN,
+            success_url='http://localhost:5500/book-pack-success?booking_id=' + booking_id,
+            cancel_url='https://app.syncy.net/brand/discover',
         )
         # print(checkout_session)
         responseObject = {
             'status': 'success',
-            'data': {
+            'body': {
                 'url': checkout_session.url,
             },
         }
@@ -1443,19 +1595,6 @@ def create_checkout_session():
     except Exception as e:
         print('e', str(e))
         return str(e)
-
-# return all target user profiles
-@app.route('/all_target_user_profiles', methods=['GET'])
-def get_all_target_user_profiles():
-    target_user_profiles = TargetUserProfileModel.query.all()
-    target_user_profiles_dict = TargetUserProfileModel.serialize_all(target_user_profiles)
-    # responseObject = {
-    #     'status': 'success',
-    #     'data': {
-    #         'target_user_profiles': target_user_profiles_dict,
-    #     },
-    # }
-    return make_response(jsonify(target_user_profiles_dict)), 200
 
 # api to render a page that calls /all_target_user_profiles and converts json to csv and downloads
 @app.route('/download_all_target_user_profiles', methods=['GET'])
