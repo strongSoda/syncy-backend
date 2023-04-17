@@ -1333,7 +1333,7 @@ def book_pack_success():
     else:
         print('booking not found')
 
-    return redirect('http://localhost:3000/brand/booking/' + booking_id)
+    return redirect('http://app.syncy.net/brand/order/' + booking_id)
 
 # get booking by id
 @app.route('/booking/<booking_id>', methods=['GET'])
@@ -1599,7 +1599,7 @@ def create_checkout_session():
             ],
             mode='payment',
             allow_promotion_codes=True,
-            success_url='http://localhost:8000/book-pack-success?booking_id=' + booking_id,
+            success_url='https://syncy-backend.onrender.com/book-pack-success?booking_id=' + booking_id,
             cancel_url='https://app.syncy.net/brand/discover',
         )
         
