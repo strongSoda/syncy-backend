@@ -1378,9 +1378,13 @@ def get_booking(booking_id):
         return jsonify(response_object), 404
 
 # get all bookings of a user
+# with pagination
 @app.route('/bookings/<user_email>', methods=['GET'])
 def get_bookings(user_email):
-    bookings_list = ContentPackBookingsModel.query.filter_by(user_email=user_email).all()
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 5, type=int)
+
+    bookings_list = ContentPackBookingsModel.query.filter_by(user_email=user_email).order_by(ContentPackBookingsModel.date_created.desc()).paginate(page=page, per_page=per_page, error_out=False).items
 
     print('bookings_list', bookings_list)
 
@@ -1397,6 +1401,7 @@ def get_bookings(user_email):
                 'contentPack': ContentPacksModel.serialize(ContentPacksModel.query.filter_by(id=b.contentpack_id).first()),
                 'status': b.status,
                 'influencer': InfluencerProfileModel.serialize(influencer),
+                'date': b.date_created,
             }
 
             bookings.append(booking)
@@ -1409,8 +1414,16 @@ def get_bookings(user_email):
         'body': {
             'bookings': bookings,
             'length': len(bookings)
+        },
+        "pagination": {
+            "page": page,
+            "per_page": per_page,
+            "total": len(bookings),
+            "pages": 1
         }
     }
+
+    return jsonify(response_object), 201
 
 
 # create stream chat token
