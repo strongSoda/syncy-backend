@@ -1353,12 +1353,13 @@ def get_booking(booking_id):
                     'booking': {
                         'id': booking.id,
                         'status': booking.status,
-                        'user': BrandUserProfileModel.serialize(BrandUserProfileModel.query.filter_by(email=b.user_email).first()),
-                        'contentpack': ContentPacksModel.serialize(ContentPacksModel.query.filter_by(id=b.contentpack_id).first()),
+                        'user': BrandUserProfileModel.serialize(BrandUserProfileModel.query.filter_by(email=booking.user_email).first()),
+                        'contentPack': ContentPacksModel.serialize(ContentPacksModel.query.filter_by(id=booking.contentpack_id).first()),
                         'influencer': InfluencerProfileModel.serialize(influencer),
                         'details': booking.details,
-                        'contentScript': booking.content_script,
+                        'contentScript': booking.script,
                         'copy': booking.copy,
+                        'date': booking.date_created
                         }
                 }
             }
