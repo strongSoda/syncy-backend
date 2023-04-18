@@ -1353,13 +1353,14 @@ def get_booking(booking_id):
                     'booking': {
                         'id': booking.id,
                         'status': booking.status,
-                        'user': BrandUserProfileModel.serialize(BrandUserProfileModel.query.filter_by(email=booking.user_email).first()),
+                        'brand': BrandUserProfileModel.serialize(BrandUserProfileModel.query.filter_by(email=booking.user_email).first()),
                         'contentPack': ContentPacksModel.serialize(ContentPacksModel.query.filter_by(id=booking.contentpack_id).first()),
                         'influencer': InfluencerProfileModel.serialize(influencer),
                         'details': booking.details,
                         'contentScript': booking.script,
                         'copy': booking.copy,
-                        'date': booking.date_created
+                        'date': booking.date_created,
+                        'delivery': ContentPacksModel.query.filter_by(id=booking.contentpack_id).first().delivery
                         }
                 }
             }
@@ -1426,6 +1427,61 @@ def get_bookings(user_email):
 
     return jsonify(response_object), 201
 
+# get all bookings of an influencer by influencer email
+# with pagination
+@app.route('/influencer-bookings/<user_email>', methods=['GET'])
+def get_influencer_bookings(user_email):
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 5, type=int)
+
+    # find all the contentpack ids of the influencer
+    contentpack_ids = ContentPacksUserMapModel.query.filter_by(user_email=user_email).all()
+
+    print('contentpack_ids', contentpack_ids)
+
+    bookings_list = ContentPackBookingsModel.query.filter(
+        ContentPackBookingsModel.contentpack_id.in_([c.contentpack_id for c in contentpack_ids])).order_by(
+        ContentPackBookingsModel.date_created.desc()).paginate(
+        page=page, per_page=per_page, error_out=False).items
+
+    print('bookings_list', bookings_list)
+
+    bookings = []
+
+    if(len(bookings_list) != 0):
+        for b in bookings_list:
+            try:
+                booking = {
+                    'id': b.id,
+                    'contentPack': ContentPacksModel.serialize(ContentPacksModel.query.filter_by(id=b.contentpack_id).first()),
+                    'status': b.status,
+                    'brand': BrandUserProfileModel.serialize(BrandUserProfileModel.query.filter_by(email=b.user_email).first()),
+                    'date': b.date_created,
+                }
+
+                bookings.append(booking)
+
+            except Exception as e:
+                print(e)
+                continue
+    
+    print('bookings', bookings)
+
+    response_object = {
+        'status': 'success',
+        'message': 'Successfully fetched.',
+        'body': {
+            'bookings': bookings,
+            'length': len(bookings)
+        },
+        "pagination": {
+            "page": page,
+            "per_page": per_page,
+            "total": len(bookings),
+        }
+    }
+
+    return jsonify(response_object), 201
 
 # create stream chat token
 @app.route('/stream-chat-token', methods=['GET'])
