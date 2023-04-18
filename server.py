@@ -381,6 +381,7 @@ class ContentPackBookingsModel(Base):
     details = db.Column(db.String(20000))
     copy = db.Column(db.String(20000))
     script = db.Column(db.String(20000))
+    submission_url = db.Column(db.String(20000))
 
     def __repr__(self):
         return '<id {}>'.format(self.id)
@@ -1360,7 +1361,8 @@ def get_booking(booking_id):
                         'contentScript': booking.script,
                         'copy': booking.copy,
                         'date': booking.date_created,
-                        'delivery': ContentPacksModel.query.filter_by(id=booking.contentpack_id).first().delivery
+                        'delivery': ContentPacksModel.query.filter_by(id=booking.contentpack_id).first().delivery,
+                        'submission_url': booking.submission_url
                         }
                 }
             }
@@ -1482,6 +1484,36 @@ def get_influencer_bookings(user_email):
     }
 
     return jsonify(response_object), 201
+
+# save submission url of a booking
+@app.route('/save-submission-url', methods=['POST'])
+def save_submission_url():
+    post_data = request.get_json()
+    booking_id = post_data.get('booking_id')
+    submission_url = post_data.get('submission_url')
+
+    booking = ContentPackBookingsModel.query.filter_by(id=booking_id).first()
+
+    if(booking):
+        booking.submission_url = submission_url
+        booking.save()
+
+        response_object = {
+            'status': 'success',
+            'message': 'Successfully saved.',
+            'body': {
+                'submission_url': booking.submission_url
+            }
+
+        }
+        return jsonify(response_object), 201
+    else:
+        response_object = {
+            'status': 'fail',
+            'message': f'''No booing with id {booking_id} found.'''
+        }
+        return jsonify(response_object), 404
+
 
 # create stream chat token
 @app.route('/stream-chat-token', methods=['GET'])
