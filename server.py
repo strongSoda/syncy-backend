@@ -1486,21 +1486,24 @@ def get_influencer_bookings(user_email):
     return jsonify(response_object), 201
 
 # save submission url of a booking
-@app.route('/save-submission-url', methods=['POST'])
-def save_submission_url():
+@app.route('/save-submission-url/<booking_id>', methods=['POST'])
+def save_submission_url(booking_id):
     post_data = request.get_json()
-    booking_id = post_data.get('booking_id')
-    submission_url = post_data.get('submission_url')
+    submission_url = post_data.get('submissionUrl')
+
+    print('submission_url', submission_url)
 
     booking = ContentPackBookingsModel.query.filter_by(id=booking_id).first()
 
     if(booking):
         booking.submission_url = submission_url
+        booking.status = CONTENT_PACK_BOOKING_STATUS.SUBMITTED
         booking.save()
+        print(booking.submission_url)
 
         response_object = {
             'status': 'success',
-            'message': 'Successfully saved.',
+            'message': 'Successfully submitted.',
             'body': {
                 'submission_url': booking.submission_url
             }
@@ -1510,7 +1513,7 @@ def save_submission_url():
     else:
         response_object = {
             'status': 'fail',
-            'message': f'''No booing with id {booking_id} found.'''
+            'message': f'''No order with id {booking_id} found.'''
         }
         return jsonify(response_object), 404
 
