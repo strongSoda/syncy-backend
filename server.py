@@ -1517,6 +1517,34 @@ def save_submission_url(booking_id):
         }
         return jsonify(response_object), 404
 
+# get influencer profile and content packs of an influencer by email
+@app.route('/influencer-public-profile/<instagram_username>', methods=['GET'])
+def get_influencer_public_profile(instagram_username):
+    influencer = InfluencerProfileModel.query.filter_by(instagram_username=instagram_username).first()
+
+    if(influencer):
+        contentpacks = ContentPacksUserMapModel.query.filter_by(user_email=influencer.email).all()
+
+        contentpacks_list = []
+        for c in contentpacks:
+            contentpack = ContentPacksModel.query.filter_by(id=c.contentpack_id).first()
+            contentpacks_list.append(ContentPacksModel.serialize(contentpack))
+
+        response_object = {
+            'status': 'success',
+            'message': 'Successfully fetched.',
+            'body': {
+                'influencer': InfluencerProfileModel.serialize(influencer),
+                'contentpacks': contentpacks_list
+            }
+        }
+        return jsonify(response_object), 201
+    else:
+        response_object = {
+            'status': 'fail',
+            'message': f'''No influencer with username {instagram_username} found.'''
+        }
+        return jsonify(response_object), 404
 
 # create stream chat token
 @app.route('/stream-chat-token', methods=['GET'])
