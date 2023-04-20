@@ -382,6 +382,8 @@ class ContentPackBookingsModel(Base):
     copy = db.Column(db.String(20000))
     script = db.Column(db.String(20000))
     submission_url = db.Column(db.String(20000))
+    email_sent_to_brand = db.Column(db.Boolean, default=False)
+    email_sent_to_influencer = db.Column(db.Boolean, default=False)
 
     def __repr__(self):
         return '<id {}>'.format(self.id)
@@ -1564,6 +1566,52 @@ def save_submission_url(booking_id):
         }
         return jsonify(response_object), 404
 
+# set email sent to brand for a booking
+@app.route('/set-email-sent/<booking_id>', methods=['POST'])
+def set_email_sent(booking_id):
+    booking = ContentPackBookingsModel.query.filter_by(id=booking_id).first()
+
+    if(booking):
+        booking.email_sent_to_brand = True
+        booking.save()
+
+        response_object = {
+            'status': 'success',
+            'message': 'Successfully submitted.',
+            'body': {
+                'email_sent_to_brand': booking.email_sent_to_brand
+            }
+
+        }
+        return jsonify(response_object), 201
+    else:
+        response_object = {
+            'status': 'fail',
+            'message': f'''No order with id {booking_id} found.'''
+        }
+        return jsonify(response_object), 404
+
+# check if email sent to brand for a booking
+@app.route('/check-email-sent/<booking_id>', methods=['GET'])
+def check_email_sent(booking_id):
+    booking = ContentPackBookingsModel.query.filter_by(id=booking_id).first()
+
+    if(booking):
+        response_object = {
+            'status': 'success',
+            'message': 'Successfully submitted.',
+            'body': {
+                'email_sent_to_brand': booking.email_sent_to_brand
+            }
+
+        }
+        return jsonify(response_object), 201
+    else:
+        response_object = {
+            'status': 'fail',
+            'message': f'''No order with id {booking_id} found.'''
+        }
+        return jsonify(response_object), 404
 # get influencer profile and content packs of an influencer by email
 @app.route('/influencer-public-profile/<instagram_username>', methods=['GET'])
 def get_influencer_public_profile(instagram_username):
