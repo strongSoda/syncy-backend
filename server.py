@@ -549,6 +549,50 @@ def create_brand_user_profile():
         }
         return jsonify(response_object), 501
 
+# check if brand user profile exists by email else create
+@app.route('/brand_user_profile_exists', methods=['GET'])
+def brand_user_profile_exists():
+    email = request.args.get('email')
+    user = BrandUserProfileModel.query.filter_by(email=email).first()
+
+    try:
+        if user:
+            response_object = {
+                'code': '200',
+                'status': 'success',
+                'message': 'User profile found.',
+                'body': {
+                    'user': BrandUserProfileModel.serialize(user)
+                }
+            }
+            return jsonify(response_object), 200
+        else:
+            # create new user
+            new_user = BrandUserProfileModel(
+                email=email,
+            )
+            # save user
+            new_user.save()
+
+            response_object = {
+                'code': '200',
+                'status': 'success',
+                'message': 'User profile created.',
+                'body': {
+                    'user': BrandUserProfileModel.serialize(new_user)
+                }
+            }
+
+            return jsonify(response_object), 200
+
+    except Exception as e:
+        print(e)
+        response_object = {
+            'code': '500',
+            'status': 'fail',
+            'message': e.message
+        }
+        return jsonify(response_object), 500
 
 # get brand user profile
 @app.route('/brand_user_profile', methods=['GET'])
@@ -1320,6 +1364,9 @@ def book_content_pack(contentpack_id):
 @app.route('/book-pack-success', methods=['GET'])
 def book_pack_success():
     booking_id = request.args.get('booking_id')
+    redirect_url = request.args.get('redirect_url')
+    print('booking_id', booking_id, 'redirect_url', redirect_url)
+
     booking = ContentPackBookingsModel.query.filter_by(id=booking_id).first()
 
     print('booking', booking)
@@ -1334,7 +1381,7 @@ def book_pack_success():
     else:
         print('booking not found')
 
-    return redirect('http://app.syncy.net/brand/order/' + booking_id)
+    return redirect(redirect_url + booking_id if redirect_url else 'https://app.syncy.net/brand/order/' + booking_id)
 
 # get booking by id
 @app.route('/booking/<booking_id>', methods=['GET'])
@@ -1720,6 +1767,7 @@ def create_checkout_session():
             allow_promotion_codes=True,
             success_url='https://syncy-backend.onrender.com/book-pack-success?booking_id=' + booking_id,
             cancel_url='https://app.syncy.net/brand/discover',
+            customer_email=user_email,
         )
         
         print('checkout_session', checkout_session)
@@ -1733,6 +1781,96 @@ def create_checkout_session():
     except Exception as e:
         print('error', str(e))
         return str(e)
+
+
+# Create a Checkout Session
+@app.route('/create-public-checkout-session', methods=['POST'])
+def create_public_checkout_session():
+    print('create_checkout_session')
+    # get the post data from the request
+    post_data = request.get_json()
+    booking_id = post_data.get('bookingId')
+    user_email = post_data.get('userEmail')
+
+    # get user from the database by user id
+    user = BrandUserProfileModel.query.filter_by(email=user_email).first()
+    
+    # get booking from the database by booking id
+    booking = ContentPackBookingsModel.query.filter_by(id=booking_id).first()
+
+    # get content pack from the database by content pack id
+    content_pack = ContentPacksModel.query.filter_by(id=booking.contentpack_id).first()
+
+    # get influencer from the database by influencer id after getting content pack influencer map
+    influencerContentMap = ContentPacksUserMapModel.query.filter_by(contentpack_id=content_pack.id).first()
+
+    influencer = InfluencerProfileModel.query.filter_by(email=influencerContentMap.user_email).first()
+
+    print('debug', booking_id, user_email, booking, content_pack.title, influencerContentMap, influencer.first_name, influencer.last_name)
+
+    # get the details from the booking
+    details = booking.details
+
+    # get the content script from the booking
+    content_script = booking.script
+
+    # get the copy from the booking
+    copy = booking.copy
+
+    # get the price from the booking
+    price = content_pack.price
+
+    try:
+        checkout_session = stripe.checkout.Session.create(
+            line_items=[
+                {
+                    # Provide the exact Price ID (for example, pr_1234) of the product you want to sell
+                    'price_data': {
+                        'currency': 'usd',
+                        'unit_amount': price*100 if price else 5000,
+                        'product_data': {
+                            'name': content_pack.title + ' by ' + influencer.first_name + ' ' + influencer.last_name,
+                            "description": content_pack.description,
+                            "images": [influencer.image_url],
+                            "metadata": {
+                                "bookingId": booking_id,
+                                "contentPackId": content_pack.id,
+                                "influencer": str(influencer)[:400],
+                                "platform": content_pack.platform,
+                                "delivery": content_pack.delivery,
+                                "name": user.first_name + ' ' + user.last_name if user.first_name else user.email,
+                                "email" : user.email,
+                                "company": user.company_name if user.company_name else 'N/A',
+                                # truncate details to 400 characters
+                                "details": str(details[:400]),
+                                "contentScript": str(content_script[:400]),
+                                "copy": str(copy[:400]),
+                            },
+                        },
+                    },
+                    'quantity': 1,
+                },
+            ],
+            mode='payment',
+            allow_promotion_codes=True,
+            success_url='https://syncy-backend.onrender.com/book-pack-success?booking_id=' + booking_id + '&redirect_url=' + "https://syncy.net/order/",
+            cancel_url='https://syncy.net/',
+            customer_email=user_email,
+        )
+        
+        print('checkout_session', checkout_session)
+        responseObject = {
+            'status': 'success',
+            'body': {
+                'url': checkout_session.url,
+            },
+        }
+        return make_response(jsonify(responseObject)), 200
+    
+    except Exception as e:
+        print('error', str(e))
+        return str(e)
+
 
 # api to render a page that calls /all_target_user_profiles and converts json to csv and downloads
 @app.route('/download_all_target_user_profiles', methods=['GET'])
