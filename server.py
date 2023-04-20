@@ -1381,7 +1381,7 @@ def book_pack_success():
     else:
         print('booking not found')
 
-    return redirect(redirect_url + booking_id if redirect_url else 'https://app.syncy.net/brand/order/' + booking_id)
+    return redirect(redirect_url + '?id=' + booking_id if redirect_url else 'https://app.syncy.net/brand/order/' + booking_id)
 
 # get booking by id
 @app.route('/booking/<booking_id>', methods=['GET'])
