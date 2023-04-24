@@ -218,6 +218,9 @@ class InfluencerProfileModel(Base):
     image_url = db.Column(db.String(200))
     calender_url = db.Column(db.String(200))
 
+    payment_method = db.Column(db.String(200))
+    payment_method_details = db.Column(db.String(500))
+
     # instagram username, followers count, rate, category, hashtags, top post url 1, top post url 2, top post url 3, sponsored post url 1, sponsored post url 2, sponsored post url 3
     instagram_username = db.Column(db.String(200))
     followers_count = db.Column(db.Integer)
@@ -634,6 +637,17 @@ def create_influencer_profile_personal():
 
     print(email, first_name, last_name, image_url, city, bio, calender_url)
 
+    instagram_username = post_data.get('username')
+    followers_count = post_data.get('followersCount')
+    category = post_data.get('category')
+    
+    print(instagram_username, followers_count, category)
+
+    payment_method = post_data.get('paymentMethod')
+    payment_method_details = post_data.get('paymentDetails')
+
+    print(payment_method, payment_method_details)
+
     # check if user exists
 
     user = InfluencerProfileModel.query.filter_by(email=email).first()
@@ -647,6 +661,13 @@ def create_influencer_profile_personal():
             user.city = city
             user.bio = bio
             user.calender_url = calender_url
+
+            user.instagram_username = instagram_username
+            user.followers_count = followers_count if followers_count else 0
+            user.category = category if category else ''
+
+            user.payment_method = payment_method
+            user.payment_method_details = payment_method_details
 
             # save user
             db.session.add(user)
@@ -664,6 +685,11 @@ def create_influencer_profile_personal():
                 'city': user.city,
                 'bio': user.bio,
                 'bookCallInfo': user.calender_url,
+                'instagramUsername': user.instagram_username,
+                'followersCount': user.followers_count,
+                'category': user.category,
+                'paymentMethod': user.payment_method,
+                'paymentDetails': user.payment_method_details,
             })
 
             response_object = {
@@ -689,7 +715,12 @@ def create_influencer_profile_personal():
                 image_url=image_url,
                 city=city,
                 bio=bio,
-                calender_url=calender_url
+                calender_url=calender_url,
+                instagram_username=instagram_username,
+                followers_count=followers_count if followers_count else 0,
+                category=category if category else '',
+                payment_method=payment_method,
+                payment_method_details=payment_method_details
             )
 
             print(new_user)
@@ -710,6 +741,11 @@ def create_influencer_profile_personal():
                 'city': new_user.city,
                 'bio': new_user.bio,
                 'bookCallInfo': new_user.calender_url,
+                'instagramUsername': new_user.instagram_username,
+                'followersCount': new_user.followers_count,
+                'category': new_user.category,
+                'paymentMethod': new_user.payment_method,
+                'paymentDetails': new_user.payment_method_details,
             })
 
             response_object = {
