@@ -1152,6 +1152,52 @@ def get_campaigns():
         }
         return jsonify(response_object), 401
 
+# get all campaigns by email
+@app.route('/brand/campaigns-by-email', methods=['GET'])
+def get_campaigns_by_email():
+    email = request.args.get('email')
+    print(email)
+    
+    campaigns = CampaignsModel.query.filter_by(email=email).all()
+
+    print(campaigns)
+
+    if campaigns:
+        response_object = {
+            'status': 'success',
+            'message': 'Successfully fetched campaigns.',
+            'body': {
+                'campaigns': CampaignsModel.serialize_all(campaigns)
+            }
+        }
+        return jsonify(response_object), 201
+    else:
+        response_object = {
+            'status': 'fail',
+            'message': 'No campaigns found.'
+        }
+        return jsonify(response_object), 404
+
+
+# delete campaign by id
+@app.route('/brand/campaign/<campaign_id>', methods=['DELETE'])
+def delete_campaign(campaign_id):
+    campaign = CampaignsModel.query.filter_by(id=campaign_id).first()
+
+    if campaign:
+        campaign.delete()
+
+        response_object = {
+            'status': 'success',
+            'message': 'Successfully deleted campaign.'
+        }
+        return jsonify(response_object), 201
+    else:
+        response_object = {
+            'status': 'fail',
+            'message': 'No campaigns found.'
+        }
+        return jsonify(response_object), 404
 
 # create proposal for campaign
 @app.route('/campaign/apply', methods=['GET'])
