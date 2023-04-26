@@ -44,10 +44,10 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'postgres://admin:ISXCZMs8jsMbIueadzQzXq
 print('################################', os.environ.get("DATABASE_URI"), os.environ.get("STRIPE_LIVE_SECRET_KEY"))
 import stripe
 # This is your test secret API key.
-stripe.api_key = 'sk_test_51JMNGMBC2Ls8FQJScwZbebJ4QxAU4XIEpf7tHIQ6b2gOJ8piskUX5WAWi6TfKrMiTmv6pHuJr1rFQsgwdPeEmHjo00h9RzLUTz'
+# stripe.api_key = 'sk_test_51JMNGMBC2Ls8FQJScwZbebJ4QxAU4XIEpf7tHIQ6b2gOJ8piskUX5WAWi6TfKrMiTmv6pHuJr1rFQsgwdPeEmHjo00h9RzLUTz'
 
 # This is your live secret API key.
-# stripe.api_key = os.environ.get("STRIPE_LIVE_SECRET_KEY")
+stripe.api_key = os.environ.get("STRIPE_LIVE_SECRET_KEY")
 
 db = SQLAlchemy(app)
 migrate = Migrate(app, db, compare_type=True)
