@@ -1676,6 +1676,13 @@ def save_review(booking_id):
         )
         review.save()
 
+        # update the status of the booking
+        booking = ContentPackBookingsModel.query.filter_by(id=booking_id).first()
+
+        if(booking):
+            booking.status = CONTENT_PACK_BOOKING_STATUS.COMPLETED
+            booking.save()
+
         response_object = {
             'status': 'success',
             'message': 'Successfully submitted.',
