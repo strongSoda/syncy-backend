@@ -391,6 +391,16 @@ class ContentPackBookingsModel(Base):
     def __repr__(self):
         return '<id {}>'.format(self.id)
 
+class ReviewsModel(Base):
+    __tablename__ = 'reviews'
+
+    booking_id = db.Column(db.Integer, nullable=False)
+    rating = db.Column(db.Integer)
+    review = db.Column(db.String(1000))
+
+    def __repr__(self):
+        return '<id {}>'.format(self.id)
+
 """routes"""
 
 """home route"""
@@ -1646,6 +1656,67 @@ def save_submission_url(booking_id):
             'status': 'fail',
             'message': f'''No order with id {booking_id} found.'''
         }
+        return jsonify(response_object), 404
+
+#   save a review for a booking
+@app.route('/review/<booking_id>', methods=['POST'])
+def save_review(booking_id):
+    post_data = request.get_json()
+    review = post_data.get('review')
+    rating = post_data.get('rating')
+
+    print('review', review)
+    print('rating', rating)
+    
+    try:
+        review = ReviewsModel(
+            review=review,
+            rating=rating,
+            booking_id=booking_id
+        )
+        review.save()
+
+        response_object = {
+            'status': 'success',
+            'message': 'Successfully submitted.',
+            'body': {
+                'review': ReviewsModel.serialize(review)
+            }
+        }
+
+        return jsonify(response_object), 201
+    
+    except Exception as e:
+        print(e)
+        response_object = {
+            'status': 'fail',
+            'message': 'Some error occurred. Please try again.'
+        }
+
+        return jsonify(response_object), 500
+
+
+# get a review for a booking 
+@app.route('/review/<booking_id>', methods=['GET'])
+def get_review(booking_id):
+    review = ReviewsModel.query.filter_by(booking_id=booking_id).first()
+
+    if(review):
+        response_object = {
+            'status': 'success',
+            'message': 'Successfully fetched.',
+            'body': {
+                'review': ReviewsModel.serialize(review)
+            }
+        }
+
+        return jsonify(response_object), 201
+    else:
+        response_object = {
+            'status': 'fail',
+            'message': f'''No review with booking id {booking_id} found.'''
+        }
+
         return jsonify(response_object), 404
 
 # set email sent to brand for a booking
