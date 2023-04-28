@@ -1626,6 +1626,65 @@ def get_influencer_bookings(user_email):
 
     return jsonify(response_object), 201
 
+# get influencer profiles of those who has created a contentpack
+# with pagination
+@app.route('/influencer-profiles', methods=['GET'])
+def get_influencer_profiles():
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 5, type=int)
+
+    # find all the contentpack ids of the influencer
+    contentpack_ids = ContentPacksUserMapModel.query.all()
+
+    print('contentpack_ids', contentpack_ids)
+
+    influencer_profiles_list = InfluencerProfileModel.query.filter(
+        InfluencerProfileModel.email.in_([c.user_email for c in contentpack_ids])).order_by(
+        InfluencerProfileModel.date_created.desc()).paginate(
+        page=page, per_page=per_page, error_out=False).items
+
+    print('influencer_profiles_list', influencer_profiles_list)
+
+    influencer_profiles = []
+
+    if(len(influencer_profiles_list) != 0):
+        for i in influencer_profiles_list:
+            try:
+                influencer_profile = {
+                    'id': i.id,
+                    'name': i.first_name + ' ' + i.last_name,
+                    'username': i.instagram_username,
+                    'bio': i.bio,
+                    'followers': i.followers_count,
+                    'profileImage': i.image_url,
+                }
+
+                influencer_profiles.append(influencer_profile)
+
+            except Exception as e:
+                print(e)
+                continue
+    
+    print('influencer_profiles', influencer_profiles)
+
+    response_object = {
+        'status': 'success',
+        'message': 'Successfully fetched.',
+        'body': {
+            'influencer_profiles': influencer_profiles,
+            'length': len(influencer_profiles)
+        },
+        "pagination": {
+            "page": page,
+            "per_page": per_page,
+            "total": len(influencer_profiles),
+        }
+    }
+
+    return jsonify(response_object), 201
+    
+
+
 # save submission url of a booking
 @app.route('/save-submission-url/<booking_id>', methods=['POST'])
 def save_submission_url(booking_id):
