@@ -217,6 +217,7 @@ class InfluencerProfileModel(Base):
     city = db.Column(db.String(200))
     image_url = db.Column(db.String(200))
     calender_url = db.Column(db.String(200))
+    portfolio_url = db.Column(db.String(500))
 
     payment_method = db.Column(db.String(200))
     payment_method_details = db.Column(db.String(500))
@@ -644,8 +645,9 @@ def create_influencer_profile_personal():
     city = post_data.get('city')
     bio = post_data.get('bio')
     calender_url = post_data.get('bookCallInfo')
+    portfolio_url = post_data.get('portfolioUrl')
 
-    print(email, first_name, last_name, image_url, city, bio, calender_url)
+    print(email, first_name, last_name, image_url, city, bio, calender_url, portfolio_url)
 
     instagram_username = post_data.get('username')
     followers_count = post_data.get('followersCount')
@@ -679,6 +681,8 @@ def create_influencer_profile_personal():
             user.payment_method = payment_method
             user.payment_method_details = payment_method_details
 
+            user.portfolio_url = portfolio_url
+
             # save user
             db.session.add(user)
             db.session.commit()
@@ -700,6 +704,7 @@ def create_influencer_profile_personal():
                 'category': user.category,
                 'paymentMethod': user.payment_method,
                 'paymentDetails': user.payment_method_details,
+                'portfolioUrl': user.portfolio_url
             })
 
             response_object = {
@@ -730,7 +735,8 @@ def create_influencer_profile_personal():
                 followers_count=followers_count if followers_count else 0,
                 category=category if category else '',
                 payment_method=payment_method,
-                payment_method_details=payment_method_details
+                payment_method_details=payment_method_details,
+                portfolio_url=portfolio_url
             )
 
             print(new_user)
@@ -756,6 +762,7 @@ def create_influencer_profile_personal():
                 'category': new_user.category,
                 'paymentMethod': new_user.payment_method,
                 'paymentDetails': new_user.payment_method_details,
+                'portfolioUrl': new_user.portfolio_url
             })
 
             response_object = {
